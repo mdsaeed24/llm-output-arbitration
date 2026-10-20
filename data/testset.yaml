@@ -1,0 +1,91 @@
+# =============================================================================
+# LLM Output Arbitration — evaluation test set (answer keys are HUMAN-written)
+# =============================================================================
+#
+# FORMAT
+# ------
+# version: 1
+# cases:
+#   - id: short-kebab-id            # unique; lowercase letters, digits, - and _
+#     question: |                   # the original question (optional, but include it:
+#       ...                         #   completeness can't be judged well without it)
+#     output: |                     # the text the system evaluates
+#       ...
+#     planted: []                   # the ANSWER KEY. Empty list = clean case.
+#     tags: [subtle, multi-part]    # optional, free-form (used to slice results)
+#     notes: ...                    # optional, for you
+#
+# PLANTED ISSUES — two shapes, because they are matched differently:
+#
+#   1) factual / logic  → the error lives in specific text; matched by SPAN OVERLAP
+#        - type: factual            # or: logic
+#          span: "July 20, 1971"    # EXACT substring of `output` (copy-paste it).
+#                                   #   Must appear exactly once — lengthen it if not.
+#          description: "Apollo 11 landed in 1969, not 1971."
+#
+#   2) completeness     → something is ABSENT; it has no span, so it is matched by an
+#                         LLM JUDGE (deepseek-flash) comparing descriptions
+#        - type: completeness
+#          missing: "How long the astronauts stayed on the lunar surface."
+#                                   # Describe WHAT is missing — one specific item per
+#                                   #   entry, concrete enough that someone else could
+#                                   #   tell whether a critic's complaint is the same one.
+#          anchor: "Neil Armstrong and Buzz Aldrin walked on the surface"
+#                                   # OPTIONAL. Sentence nearest the gap. Used ONLY to
+#                                   #   highlight the gap in the UI; never for matching.
+#
+# HOW MATCHING WORKS (Phase 5) — so you know what each field is for
+#   * A critic's factual/logic issue counts as catching a planted factual/logic issue
+#     when their spans overlap.
+#   * A critic's completeness issue counts as catching a planted omission only when the
+#     judge confirms both descriptions refer to the same missing item. A completeness
+#     issue NEVER matches by span (critics anchor omissions on nearby sentences, which
+#     would otherwise "catch" unrelated planted errors by accident).
+#   * The judge sees descriptions only, not which system raised them (blind).
+#   * The report counts span matches vs judge matches and lists every judge match so
+#     you can spot-check it.
+#
+# The loader (arbiter.schemas.testcase.load_testset) rejects: spans not found verbatim,
+# spans that appear more than once, anchors not found, unknown keys, duplicate ids.
+#
+# -----------------------------------------------------------------------------
+# COVERAGE CHECKLIST  (target ~40 cases, ~25% clean ≈ 10 clean cases)
+# -----------------------------------------------------------------------------
+# Record as `factual` (span):
+#   [ ] wrong dates
+#   [ ] wrong numbers / quantities / units
+#   [ ] wrong names / attributions (who said, invented, discovered what)
+#   [ ] subtle factual error inside an otherwise excellent answer
+# Record as `logic` (span = the sentence where the reasoning breaks):
+#   [ ] internal contradiction (X stated, later not-X) — span = the second, contradicting claim
+#   [ ] unsupported conclusion (conclusion doesn't follow from what was said)
+#   [ ] circular reasoning (conclusion used as its own premise)
+#   [ ] subtle logic flaw inside an otherwise excellent answer
+# Record as `completeness` (missing + optional anchor):
+#   [ ] skips one part of a multi-part question
+#   [ ] technically responds but misses the point
+#         (missing: what a direct answer would have given, e.g. "an actual recommendation
+#          between the two options — the answer only lists pros and cons")
+#   [ ] ignores an explicit constraint (word limit, "give an example", "compare")
+# Mixed / difficulty:
+#   [ ] cases with 2–3 planted issues of different types
+#   [ ] cases with a single, subtle issue
+#   [ ] a range of domains (history, science, programming, finance, health, everyday)
+# Clean (planted: []):
+#   [ ] ~10 genuinely good answers — including some long, confident, detailed ones, so
+#       false flags on good text are actually tested
+#
+# RULES OF THUMB
+#   * You decide every planted issue. scripts/case_builder.py only drafts CLEAN answers;
+#     you then edit them to plant errors and record each one here.
+#   * One planted entry per distinct problem. If you plant a wrong date that also breaks
+#     a later calculation, decide whether that is one issue or two and be consistent.
+#   * Keep spans tight (the wrong phrase, or the one sentence) — huge spans make span
+#     overlap meaningless.
+#   * When unsure whether a draft answer is truly clean, check it yourself before
+#     marking it clean: a hidden real error in a "clean" case will be counted as a
+#     false flag against the system.
+# =============================================================================
+
+version: 1
+cases: []   # Phase 4: three commented example cases go here, then your ~40.

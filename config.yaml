@@ -1,0 +1,102 @@
+# LLM Output Arbitration — runtime configuration.
+# Every model assignment below is swappable: change a role's model key, or add a new
+# model/provider entry, without touching code.
+#
+# Sources (checked 2026-10-19, official docs only):
+#   DeepSeek: https://api-docs.deepseek.com/  and /quick_start/pricing
+#   Gemini:   https://ai.google.dev/gemini-api/docs/openai  and /models, /pricing
+#   Ollama:   https://ollama.com (OpenAI-compatible endpoint at /v1)
+
+providers:
+  deepseek:
+    base_url: https://api.deepseek.com
+    api_key_env: DEEPSEEK_API_KEY
+    # DeepSeek's JSON mode is `response_format: json_object` (no json_schema), so
+    # instructor puts the schema in the prompt and validates the reply.
+    structured_mode: json
+  gemini:
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai/
+    api_key_env: GEMINI_API_KEY
+    # Gemini's compat layer accepts JSON-schema structured output.
+    structured_mode: json_schema
+    free_tier: true
+  ollama:
+    base_url: http://localhost:11434/v1
+    api_key_env: OLLAMA_API_KEY
+    structured_mode: json
+    requires_api_key: false
+
+# Prices are USD per 1M tokens. DeepSeek uses PEAK prices (a conservative upper bound;
+# off-peak is ~50% cheaper). Gemini uses paid-tier list prices so cost comparisons are
+# meaningful even though the free tier bills $0.
+models:
+  deepseek-v4-pro:
+    provider: deepseek
+    model_id: deepseek-v4-pro
+    pricing: {input: 1.32, cached_input: 0.044, output: 3.96}
+    # Thinking is ON by default at DeepSeek; we disable it for cost and latency.
+    extra_body: {thinking: {type: disabled}}
+    temperature: 0.0   # reproducible evals (honoured in non-thinking mode)
+  deepseek-flash:
+    provider: deepseek
+    model_id: deepseek-flash
+    pricing: {input: 0.30, cached_input: 0.006, output: 1.20}
+    extra_body: {thinking: {type: disabled}}
+    temperature: 0.0
+  gemini-flash:
+    provider: gemini
+    # gemini-3.8-flash (newest) measured 43-92s per call on the free tier on 2026-10-20 even
+    # for a 9-token prompt; 3.6-flash answered in ~2s at the same price.
+    model_id: gemini-3.6-flash
+    pricing: {input: 0.75, cached_input: 0.75, output: 3.75}
+    # Gemini 3 models cannot turn reasoning off; "low" keeps hidden thinking tokens
+    # (which count toward the output cap and cost) small. Temperature is left at
+    # Google's default: their docs advise against lowering it for Gemini 3.
+    reasoning_effort: low
+  ollama-local:
+    provider: ollama
+    model_id: qwen3:8b
+    pricing: {input: 0.0, cached_input: 0.0, output: 0.0}
+
+roles:
+  critics:
+    factual: deepseek-v4-pro
+    logic: gemini-flash
+    completeness: deepseek-flash
+  # Extra critics for experiments only. Off by default. Example:
+  #   extra_critics:
+  #     factual_local: {dimension: factual, model: ollama-local}
+  extra_critics: {}
+  adjudicator: deepseek-v4-pro
+  baseline: deepseek-v4-pro
+  case_builder: deepseek-v4-pro
+  # Eval only: decides whether a found completeness issue and a planted omission describe
+  # the same missing item (span overlap can't match omissions). Cheap model on purpose.
+  match_judge: deepseek-flash
+
+limits:
+  max_concurrency: 4          # max in-flight LLM calls across the whole process
+  max_output_tokens: 2048     # hard cap per call
+  max_retries: 4              # transient errors / 429s, with exponential backoff
+  backoff_initial_s: 2.0
+  backoff_max_s: 60.0
+  request_timeout_s: 120.0
+  max_input_chars: 20000      # reject larger inputs instead of paying for them
+
+disagreement:
+  # Short-circuit the adjudicator only if every critic reports zero valid issues AND
+  # every critic's self-confidence is at least this high.
+  unanimous_pass_min_confidence: 0.8
+  # Two quoted spans refer to "the same text" when their overlap covers at least this
+  # fraction of the SHORTER span ("July 20, 1971" inside its full sentence = 1.0).
+  span_overlap_min_ratio: 0.5
+  # A dimension is marked low-confidence if its critic failed or its confidence is below this.
+  low_confidence_below: 0.5
+
+verdict:
+  # The output FAILS if any confirmed issue is at least this severe.
+  fail_at_severity: medium
+
+paths:
+  db: data/arbiter.db
+  call_log: logs/llm_calls.jsonl

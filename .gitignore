@@ -1,0 +1,32 @@
+# Secrets
+.env
+
+# Databases (audit trail is local, never committed)
+*.db
+*.db-journal
+*.sqlite
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Raw per-call logs and eval run artifacts (reports/eval_report.md IS committed)
+logs/
+reports/runs/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
