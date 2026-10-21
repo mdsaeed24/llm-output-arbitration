@@ -7,12 +7,17 @@
 # version: 1
 # cases:
 #   - id: short-kebab-id            # unique; lowercase letters, digits, - and _
+#     status: draft                 # draft | ready. ONLY `ready` cases are evaluated.
+#                                   #   Set ready after YOU have checked the output and
+#                                   #   its answer key (default if omitted: draft).
+#     tags: [domain-history, wrong-date, subtle]   # see TAGS below
 #     question: |                   # the original question (optional, but include it:
 #       ...                         #   completeness can't be judged well without it)
-#     output: |                     # the text the system evaluates
-#       ...
+#     output: >                     # the text the system evaluates. Use `>` (folded):
+#       ...                         #   wrapped lines join with spaces, a blank line is a
+#                                   #   paragraph break. Use `|` only if exact line breaks
+#                                   #   matter (e.g. code).
 #     planted: []                   # the ANSWER KEY. Empty list = clean case.
-#     tags: [subtle, multi-part]    # optional, free-form (used to slice results)
 #     notes: ...                    # optional, for you
 #
 # PLANTED ISSUES — two shapes, because they are matched differently:
@@ -21,6 +26,7 @@
 #        - type: factual            # or: logic
 #          span: "July 20, 1971"    # EXACT substring of `output` (copy-paste it).
 #                                   #   Must appear exactly once — lengthen it if not.
+#                                   #   Whitespace/line breaks may differ; nothing else.
 #          description: "Apollo 11 landed in 1969, not 1971."
 #
 #   2) completeness     → something is ABSENT; it has no span, so it is matched by an
@@ -36,7 +42,9 @@
 #
 # HOW MATCHING WORKS (Phase 5) — so you know what each field is for
 #   * A critic's factual/logic issue counts as catching a planted factual/logic issue
-#     when their spans overlap.
+#     when their spans overlap. (Factual vs logic doesn't have to agree: a factual critic
+#     that flags your planted contradiction still caught it. Per-type recall uses the
+#     PLANTED type.)
 #   * A critic's completeness issue counts as catching a planted omission only when the
 #     judge confirms both descriptions refer to the same missing item. A completeness
 #     issue NEVER matches by span (critics anchor omissions on nearby sentences, which
@@ -47,33 +55,45 @@
 #
 # The loader (arbiter.schemas.testcase.load_testset) rejects: spans not found verbatim,
 # spans that appear more than once, anchors not found, unknown keys, duplicate ids.
+# Check your work any time with:   python scripts/case_builder.py check
+#
+# TAGS — recommended vocabulary (`check` reports coverage for each; add your own freely)
+#   factual:      wrong-date  wrong-number  wrong-name
+#   logic:        contradiction  unsupported-conclusion  circular
+#   completeness: skipped-part  missed-point  ignored-constraint
+#   modifiers:    subtle (error hidden in an otherwise excellent answer)  mixed (2+ types)
+#   clean:        clean
+#   domain:       domain-<anything>, e.g. domain-history, domain-science, domain-finance
 #
 # -----------------------------------------------------------------------------
-# COVERAGE CHECKLIST  (target ~40 cases, ~25% clean ≈ 10 clean cases)
+# COVERAGE CHECKLIST  (target ~40 ready cases, ~25% clean ≈ 10 clean cases)
 # -----------------------------------------------------------------------------
 # Record as `factual` (span):
-#   [ ] wrong dates
-#   [ ] wrong numbers / quantities / units
-#   [ ] wrong names / attributions (who said, invented, discovered what)
-#   [ ] subtle factual error inside an otherwise excellent answer
+#   [ ] wrong dates                                         tag: wrong-date
+#   [ ] wrong numbers / quantities / units                  tag: wrong-number
+#   [ ] wrong names / attributions (who said/did what)      tag: wrong-name
+#   [ ] subtle factual error inside an otherwise excellent answer   + subtle
 # Record as `logic` (span = the sentence where the reasoning breaks):
-#   [ ] internal contradiction (X stated, later not-X) — span = the second, contradicting claim
-#   [ ] unsupported conclusion (conclusion doesn't follow from what was said)
-#   [ ] circular reasoning (conclusion used as its own premise)
-#   [ ] subtle logic flaw inside an otherwise excellent answer
+#   [ ] internal contradiction — span = the second, contradicting claim
+#                                                           tag: contradiction
+#   [ ] unsupported conclusion (doesn't follow from what was said)
+#                                                           tag: unsupported-conclusion
+#   [ ] circular reasoning (conclusion used as its own premise)     tag: circular
+#   [ ] subtle logic flaw inside an otherwise excellent answer      + subtle
 # Record as `completeness` (missing + optional anchor):
-#   [ ] skips one part of a multi-part question
-#   [ ] technically responds but misses the point
+#   [ ] skips one part of a multi-part question             tag: skipped-part
+#   [ ] technically responds but misses the point           tag: missed-point
 #         (missing: what a direct answer would have given, e.g. "an actual recommendation
 #          between the two options — the answer only lists pros and cons")
 #   [ ] ignores an explicit constraint (word limit, "give an example", "compare")
+#                                                           tag: ignored-constraint
 # Mixed / difficulty:
-#   [ ] cases with 2–3 planted issues of different types
-#   [ ] cases with a single, subtle issue
+#   [ ] cases with 2–3 planted issues of different types    tag: mixed
+#   [ ] cases with a single, subtle issue                   tag: subtle
 #   [ ] a range of domains (history, science, programming, finance, health, everyday)
 # Clean (planted: []):
 #   [ ] ~10 genuinely good answers — including some long, confident, detailed ones, so
-#       false flags on good text are actually tested
+#       false flags on good text are actually tested       tag: clean
 #
 # RULES OF THUMB
 #   * You decide every planted issue. scripts/case_builder.py only drafts CLEAN answers;
@@ -82,10 +102,1358 @@
 #     a later calculation, decide whether that is one issue or two and be consistent.
 #   * Keep spans tight (the wrong phrase, or the one sentence) — huge spans make span
 #     overlap meaningless.
-#   * When unsure whether a draft answer is truly clean, check it yourself before
-#     marking it clean: a hidden real error in a "clean" case will be counted as a
-#     false flag against the system.
+#   * Before marking a case `ready`, check the WHOLE output yourself: a hidden real error
+#     in a case will be counted as a false flag against whichever system catches it.
+#   * A planted error must be something a careful expert would call wrong — not a matter
+#     of style or opinion — or recall numbers stop meaning anything.
 # =============================================================================
 
 version: 1
-cases: []   # Phase 4: three commented example cases go here, then your ~40.
+cases:
+
+  # ---------------------------------------------------------------------------
+  # EXAMPLE 1 — two span issues of different types (factual + logic contradiction).
+  # Written by Claude as a FORMAT EXAMPLE: review it, then set status: ready to keep
+  # it in the eval, or delete it.
+  # ---------------------------------------------------------------------------
+  - id: example-sky-colour
+    status: draft
+    tags: [example, domain-science, wrong-number, contradiction, mixed]
+    question: |
+      Why is the sky blue during the day, and why do sunsets look orange or red?
+    output: >
+      The sky looks blue because of Rayleigh scattering. Sunlight contains all visible
+      wavelengths, and as it passes through the atmosphere it meets gas molecules that are
+      much smaller than the wavelength of the light. These molecules scatter shorter
+      wavelengths far more strongly than longer ones — the effect scales with the inverse
+      fourth power of the wavelength — so blue light, at around 650 nanometers, is scattered
+      across the whole sky and reaches our eyes from every direction. At sunset, sunlight
+      has to travel through much more atmosphere to reach you. Because red light scatters
+      the most, the red light is spread out along this long path while the blue light comes
+      straight through, which is why sunsets look orange and red.
+    planted:
+      # Planted wrong number: blue light is roughly 450-495 nm; ~650 nm is red.
+      - type: factual
+        span: "at around 650 nanometers"
+        description: "Blue light is about 450-495 nm; 650 nm is red light."
+      # Planted contradiction: the text first says SHORTER wavelengths (blue) scatter more,
+      # then explains sunsets by saying RED scatters the most. Span = the second claim.
+      - type: logic
+        span: "Because red light scatters the most"
+        description: >-
+          Contradicts the earlier statement that shorter wavelengths scatter more strongly;
+          sunsets are red because blue is scattered OUT of the long path, leaving red.
+    notes: >-
+      The contradiction is also factually wrong, so a factual critic may catch it too —
+      that still counts as a catch (span overlap is type-agnostic for factual/logic).
+
+  # ---------------------------------------------------------------------------
+  # EXAMPLE 2 — completeness: answers the first part well, skips the second part
+  # (the actual decision the user asked for). Note: no span, `missing` + `anchor`.
+  # ---------------------------------------------------------------------------
+  - id: example-roth-vs-traditional
+    status: draft
+    tags: [example, domain-finance, skipped-part, missed-point]
+    question: |
+      I'm deciding between a Roth IRA and a traditional IRA. How is each one taxed, and
+      which is usually the better choice for someone who expects to be in a higher tax
+      bracket in retirement?
+    output: >
+      With a traditional IRA, contributions may be tax-deductible, depending on your income
+      and whether you are covered by a workplace retirement plan. The investments grow
+      tax-deferred, and withdrawals in retirement are taxed as ordinary income. A Roth IRA
+      works the other way around: contributions are made with after-tax dollars and are not
+      deductible, but the money grows tax-free and qualified withdrawals in retirement are
+      not taxed at all. Both accounts have annual contribution limits set by the IRS, and
+      both generally charge a 10% penalty on early withdrawals before age 59½, with some
+      exceptions. The right account depends on your personal circumstances, so it is worth
+      reviewing your options carefully.
+    planted:
+      - type: completeness
+        missing: >-
+          A recommendation for someone expecting a higher tax bracket in retirement — usually
+          the Roth IRA, because paying tax now at the lower rate beats paying it later at the
+          higher rate.
+        anchor: "The right account depends on your personal circumstances, so it is worth reviewing your options carefully."
+    notes: >-
+      The anchor is the vague closing sentence where the recommendation should have been.
+      The taxation part is deliberately correct so the only problem is the omission.
+
+  # ---------------------------------------------------------------------------
+  # EXAMPLE 3 — clean case: accurate, complete, well-reasoned. Empty answer key.
+  # Any issue a system raises here counts as a false flag.
+  # ---------------------------------------------------------------------------
+  - id: example-list-vs-tuple
+    status: draft
+    tags: [example, domain-programming, clean]
+    question: |
+      In Python, what is the difference between a list and a tuple, and when would you
+      choose a tuple?
+    output: >
+      The main difference is mutability. A list is mutable: you can append, remove, or
+      change its elements after it is created. A tuple is immutable: once it is created, its
+      elements cannot be reassigned, added, or removed. Because of this, a tuple whose
+      elements are all hashable is itself hashable, so it can be used as a dictionary key or
+      stored in a set, which a list cannot. Tuples are also slightly more memory-efficient,
+      and their immutability tells readers that the collection is not meant to change.
+
+      Choose a tuple for a fixed group of related values — such as an (x, y) coordinate, a
+      database row, or several values returned from a function — and for anything that needs
+      to be a dictionary key. Choose a list for a collection of similar items whose size or
+      contents will change, like a queue of tasks or results you are accumulating.
+    planted: []
+
+  # ---- your cases below (python scripts/case_builder.py draft ... appends here) ----
+
+# =============================================================================
+# CLEAN (10)
+# =============================================================================
+
+  - id: clean-photosynthesis
+    status: ready
+    tags: [clean, domain-science]
+    question: |
+      Explain how photosynthesis works and where in the plant cell it happens.
+    output: >
+      Photosynthesis is the process by which plants, algae and cyanobacteria
+      convert light energy into chemical energy stored in sugars. In plants it
+      takes place inside chloroplasts, mostly in the mesophyll cells of the leaf.
+
+
+      It happens in two linked stages. The light-dependent reactions occur in the
+      thylakoid membranes. Chlorophyll and other pigments absorb light, which
+      drives the splitting of water molecules. This releases oxygen as a
+      by-product and produces two energy carriers, ATP and NADPH.
+
+
+      The light-independent reactions, known as the Calvin cycle, take place in
+      the stroma, the fluid surrounding the thylakoids. Here the enzyme RuBisCO
+      fixes carbon dioxide from the air, and the ATP and NADPH from the first
+      stage are used to reduce it into a three-carbon sugar, G3P. Some G3P is used
+      to build glucose and other carbohydrates; the rest regenerates the starting
+      molecule so the cycle can continue.
+
+
+      The overall equation is 6CO2 + 6H2O + light energy → C6H12O6 + 6O2. One
+      detail people often get wrong: the oxygen released comes from the water,
+      not from the carbon dioxide. This was confirmed by isotope-labelling
+      experiments with oxygen-18 in the early 1940s.
+    planted: []
+
+  - id: clean-french-revolution
+    status: ready
+    tags: [clean, domain-history]
+    question: |
+      What were the main causes of the French Revolution, and how did it begin?
+    output: >
+      The French Revolution grew out of a mix of financial, social and
+      intellectual pressures.
+
+
+      Financial crisis. By the 1780s the French crown was close to bankruptcy.
+      Decades of war, including the Seven Years' War and France's costly support
+      for the American Revolution, had left enormous debts, and interest payments
+      consumed a large share of royal revenue. Attempts by ministers such as
+      Calonne and Brienne to reform taxation were blocked by the privileged
+      orders.
+
+
+      Social inequality. Society was divided into three estates: the clergy, the
+      nobility and everyone else. The first two enjoyed major tax exemptions, so
+      the burden fell heavily on the Third Estate, which included peasants, urban
+      workers and an increasingly wealthy and frustrated bourgeoisie.
+
+
+      Economic hardship. A poor harvest in 1788 pushed bread prices sharply higher
+      in 1789, at a time when bread made up a large part of ordinary people's
+      spending. Hunger made urban crowds volatile.
+
+
+      Enlightenment ideas. Writers such as Rousseau, Voltaire and Montesquieu had
+      spread ideas about popular sovereignty, the separation of powers and the
+      criticism of arbitrary authority, giving reformers a language with which to
+      challenge the old order.
+
+
+      How it began. To resolve the fiscal crisis, Louis XVI summoned the
+      Estates-General, which met at Versailles in May 1789 for the first time
+      since 1614. Disputes over voting procedure led the Third Estate to declare
+      itself the National Assembly on 17 June. Locked out of their usual hall
+      three days later, the deputies swore the Tennis Court Oath on 20 June,
+      promising not to disband until France had a constitution. Fears that the
+      king would use troops against the Assembly, combined with high bread prices,
+      led Parisians to storm the Bastille on 14 July 1789. In August the Assembly
+      abolished feudal privileges and adopted the Declaration of the Rights of Man
+      and of the Citizen.
+    planted: []
+
+  - id: clean-python-mutable-default
+    status: ready
+    tags: [clean, domain-programming]
+    question: |
+      Why does my Python function keep remembering items from previous calls?
+
+          def add_item(item, items=[]):
+              items.append(item)
+              return items
+    output: |
+      Because default argument values are evaluated once, when the `def` statement
+      runs, not each time the function is called. Every call that doesn't pass
+      `items` gets the same list object, so appends accumulate:
+
+          >>> add_item("a")
+          ['a']
+          >>> add_item("b")
+          ['a', 'b']
+
+      The standard fix is to use `None` as a sentinel and create a new list inside
+      the function:
+
+          def add_item(item, items=None):
+              if items is None:
+                  items = []
+              items.append(item)
+              return items
+
+      Now each call without an explicit list gets a fresh one. The same issue
+      applies to any mutable default: dicts, sets, or custom objects. Immutable
+      defaults such as numbers, strings, tuples or None are safe because they
+      can't be changed in place. You can see the shared object directly:
+      `add_item.__defaults__` holds the list that is being reused.
+    planted: []
+
+  - id: clean-compound-interest
+    status: ready
+    tags: [clean, domain-finance]
+    question: |
+      If I invest $10,000 at 6% per year compounded annually, how much will I have
+      after 10 years, and how does that compare with simple interest?
+    output: >
+      With annual compounding, the future value is P × (1 + r)^n = 10,000 × 1.06^10.
+      Since 1.06^10 ≈ 1.7908, you would have about $17,908.48 after 10 years, of
+      which $7,908.48 is interest.
+
+
+      With simple interest, you earn 6% of the original $10,000 every year, which
+      is $600 a year, or $6,000 over 10 years, for a total of $16,000.
+
+
+      Compounding therefore adds $1,908.48 more than simple interest, because from
+      the second year onward you also earn interest on interest already credited.
+      The gap widens the longer the money is invested.
+
+
+      A quick check is the Rule of 72: 72 ÷ 6 = 12, so money at 6% roughly doubles
+      in about 12 years. The exact figure is ln 2 ÷ ln 1.06 ≈ 11.9 years, which is
+      consistent with having about 1.79× your money after 10 years. If the same 6%
+      were compounded monthly (0.5% per month for 120 months), the balance would
+      be slightly higher, at about $18,193.97.
+    planted: []
+
+  - id: clean-vitamin-d
+    status: ready
+    tags: [clean, domain-health]
+    question: |
+      What does vitamin D do, and how much do adults need?
+    output: >
+      Vitamin D is a fat-soluble vitamin whose main job is helping the body absorb
+      calcium and phosphate from the gut, which is essential for building and
+      maintaining healthy bones. It also plays roles in muscle function and the
+      immune system.
+
+
+      The body makes vitamin D in the skin when it is exposed to UVB light from
+      the sun, so production depends on latitude, season, skin pigmentation, time
+      outdoors and sunscreen use. Relatively few foods are naturally rich in it;
+      the main ones are oily fish such as salmon, mackerel and sardines, plus egg
+      yolks. Many countries also fortify milk, plant milks and breakfast cereals.
+
+
+      Severe deficiency causes rickets in children, where bones soften and
+      deform, and osteomalacia in adults, which causes bone pain and muscle
+      weakness. Long-term insufficiency also contributes to osteoporosis risk.
+
+
+      In the United States, the recommended dietary allowance is 600 IU (15
+      micrograms) a day for people aged 1 to 70 and 800 IU (20 micrograms) a day
+      for those over 70. The tolerable upper intake level for adults is 4,000 IU
+      (100 micrograms) a day; regularly exceeding it from supplements can raise
+      blood calcium to harmful levels. If you suspect a deficiency, a blood test
+      for 25-hydroxyvitamin D is the standard way to check.
+    planted: []
+
+  - id: clean-sql-left-join
+    status: ready
+    tags: [clean, domain-programming]
+    question: |
+      What's the difference between INNER JOIN and LEFT JOIN, and why did my LEFT
+      JOIN start dropping customers when I added a WHERE clause on the orders table?
+    output: |
+      An INNER JOIN returns only rows that have a match in both tables. A LEFT JOIN
+      returns every row from the left table; where there is no match, the columns
+      from the right table are filled with NULL.
+
+      Your problem is a classic one. A query like this:
+
+          SELECT c.name, o.id
+          FROM customers c
+          LEFT JOIN orders o ON o.customer_id = c.id
+          WHERE o.status = 'shipped';
+
+      applies the WHERE clause after the join. For customers with no orders,
+      o.status is NULL, and NULL = 'shipped' evaluates to UNKNOWN rather than TRUE,
+      so those rows are filtered out. The result behaves exactly like an INNER JOIN.
+
+      If you want to keep every customer and only attach their shipped orders, move
+      the condition into the ON clause:
+
+          SELECT c.name, o.id
+          FROM customers c
+          LEFT JOIN orders o
+            ON o.customer_id = c.id AND o.status = 'shipped';
+
+      Now every customer appears, and those without a shipped order get NULL in
+      o.id. If what you actually wanted was only customers who have shipped
+      orders, write it as an INNER JOIN so the intent is obvious to the next reader.
+    planted: []
+
+  - id: clean-apollo-11
+    status: ready
+    tags: [clean, domain-history]
+    question: |
+      Give me a short account of the Apollo 11 mission.
+    output: >
+      Apollo 11 launched on 16 July 1969 from Kennedy Space Center on a Saturn V
+      rocket, carrying Neil Armstrong (commander), Buzz Aldrin (lunar module
+      pilot) and Michael Collins (command module pilot).
+
+
+      After reaching lunar orbit, Armstrong and Aldrin descended in the lunar
+      module Eagle while Collins remained in orbit aboard the command module
+      Columbia. Eagle landed in the Sea of Tranquility on 20 July 1969. A few
+      hours later Armstrong became the first person to step onto the Moon, and
+      Aldrin joined him about 20 minutes afterwards.
+
+
+      Their moonwalk lasted roughly two and a half hours. They planted a US flag,
+      deployed experiments including a seismometer and a laser retroreflector, and
+      collected about 21.5 kilograms of lunar rock and soil.
+
+
+      Eagle's ascent stage then lifted off and docked with Columbia, and the crew
+      returned to Earth, splashing down in the Pacific Ocean on 24 July 1969. The
+      mission fulfilled President Kennedy's 1961 goal of landing a man on the Moon
+      and returning him safely to Earth before the end of the decade.
+    planted: []
+
+  - id: clean-boiled-eggs
+    status: ready
+    tags: [clean, domain-everyday]
+    question: |
+      How long should I boil eggs for soft, jammy and hard yolks, and how do I make
+      them easier to peel?
+    output: >
+      For large eggs straight from the fridge, lowered gently into water that is
+      already at a rolling boil:
+
+
+      About 6 minutes gives a set white and a runny yolk. About 7 minutes gives a
+      jammy yolk that is soft and slightly sticky in the centre. Around 10 to 12
+      minutes gives a fully set, hard-boiled yolk.
+
+
+      As soon as the time is up, move the eggs into a bowl of ice water for a few
+      minutes. This stops the cooking and makes the shells easier to remove. It
+      also helps prevent the greenish-grey ring around the yolk, which is iron
+      sulfide that forms when eggs are overcooked.
+
+
+      For easier peeling, eggs that are a week or two old usually peel better than
+      very fresh ones. As an egg ages, carbon dioxide escapes through the shell,
+      the white becomes more alkaline, and it sticks less to the inner membrane.
+      Starting eggs in boiling water rather than cold water also tends to help.
+      Crack the shell all over and peel under running water, starting from the
+      wider end where the air pocket is.
+
+
+      Adjust timings slightly for egg size, altitude, and how many eggs you add at
+      once, since a crowded pan takes longer to return to the boil.
+    planted: []
+
+  - id: clean-binary-search
+    status: ready
+    tags: [clean, domain-programming]
+    question: |
+      How does binary search work, and how fast is it?
+    output: >
+      Binary search finds a target value in a sorted array by repeatedly halving
+      the range that could contain it. You compare the target with the middle
+      element. If they are equal, you are done. If the target is smaller, you
+      continue in the left half; if larger, in the right half. You stop when the
+      range is empty, which means the value is not present.
+
+
+      Because each step halves the remaining range, the worst-case number of
+      comparisons grows logarithmically, so the time complexity is O(log n). For
+      an array of 1,000,000 elements, binary search needs at most 20 comparisons,
+      because 2^20 = 1,048,576. A linear search might need up to 1,000,000.
+
+
+      The iterative version uses O(1) extra space, while a naive recursive version
+      uses O(log n) stack space.
+
+
+      Two practical caveats. First, the array must be sorted; if you have to sort
+      it first, that costs O(n log n), which only pays off if you search many
+      times. Second, in languages with fixed-width integers, computing the middle
+      index as (low + high) / 2 can overflow for very large arrays. Writing it as
+      low + (high - low) / 2 avoids that. Python's arbitrary-precision integers
+      don't have this problem, and its standard library already provides binary
+      search in the bisect module.
+    planted: []
+
+  - id: clean-rates-inflation
+    status: ready
+    tags: [clean, domain-finance]
+    question: |
+      Why do central banks raise interest rates to fight inflation?
+    output: >
+      Inflation is a sustained rise in the general price level, often because
+      total demand in the economy is outrunning what it can produce. Raising the
+      policy interest rate is meant to cool that demand.
+
+
+      When a central bank raises its policy rate, commercial banks' borrowing
+      costs rise, and they pass that on through higher rates on mortgages,
+      business loans and credit cards. Borrowing becomes more expensive, so
+      households and firms take on less debt, spend less, and postpone
+      investment. Saving becomes more attractive at the same time. Higher rates
+      also tend to strengthen the currency, which makes imports cheaper.
+
+
+      With less spending, businesses face less pressure to raise prices, and a
+      cooler labour market eases wage growth, so inflation gradually slows.
+      Expectations matter too: if people believe the central bank will keep
+      inflation under control, they are less likely to demand large pay rises or
+      set large price increases in anticipation.
+
+
+      There are two important caveats. Monetary policy works with what Milton
+      Friedman called long and variable lags, often a year or more, so central
+      banks must act on forecasts rather than current data. And raising rates too
+      far or too fast can tip the economy into recession. What matters for
+      borrowers is the real interest rate, roughly the nominal rate minus
+      inflation, which is why a 5% rate is restrictive when inflation is 2% but
+      not when inflation is 8%.
+    planted: []
+
+# =============================================================================
+# FACTUAL (10)
+# =============================================================================
+
+  - id: berlin-wall-reunification-date
+    status: ready
+    tags: [wrong-date, domain-history]
+    question: |
+      When did the Berlin Wall fall, and what happened afterwards?
+    output: >
+      The Berlin Wall fell on the night of 9 November 1989. At a chaotic press
+      conference that evening, East German spokesman Günter Schabowski mistakenly
+      announced that new rules allowing citizens to travel to the West took effect
+      immediately. Crowds gathered at the border crossings, and the overwhelmed
+      guards eventually opened them; the Bornholmer Straße crossing was the first.
+
+
+      Over the following months the East German communist government collapsed.
+      East Germany held its first free elections on 18 March 1990, and a currency
+      union introduced the West German mark in the East on 1 July 1990. In
+      September 1990 the two German states and the four wartime Allies signed the
+      Two Plus Four Treaty, which settled Germany's international status. German
+      reunification formally took place on 3 October 1991, a date still marked as
+      German Unity Day.
+    planted:
+      - type: factual
+        span: "3 October 1991"
+        description: "German reunification took place on 3 October 1990, not 1991."
+
+  - id: penicillin-discovery-date
+    status: ready
+    tags: [wrong-date, domain-science]
+    question: |
+      Who discovered penicillin and how did it become a usable drug?
+    output: >
+      Alexander Fleming discovered penicillin in 1938 at St Mary's Hospital in
+      London. Returning from holiday, he noticed that a mould contaminating one of
+      his culture plates had killed the Staphylococcus bacteria around it. He
+      identified the mould as a Penicillium species and published his findings in
+      1929, but he could not purify the active substance in useful quantities.
+
+
+      The breakthrough came at Oxford around 1939–1940, when Howard Florey and
+      Ernst Chain led a team that purified penicillin and showed it could cure
+      infections in mice and then in human patients. With wartime support from the
+      United States, production was scaled up using deep-tank fermentation, and by
+      the D-Day landings in 1944 there was enough to treat Allied casualties.
+      Fleming, Florey and Chain shared the Nobel Prize in Physiology or Medicine in
+      1945.
+    planted:
+      - type: factual
+        span: "discovered penicillin in 1938"
+        description: "Fleming discovered penicillin in 1928, not 1938 (the answer itself says he published in 1929)."
+
+  - id: python3-release-date
+    status: ready
+    tags: [wrong-date, subtle, domain-programming]
+    question: |
+      What are the main differences between Python 2 and Python 3, and why did the
+      migration take so long?
+    output: >
+      The most visible changes were these. print became a function, so print "hi"
+      became print("hi"). Dividing two integers with / now returns a float, so 3 / 2
+      is 1.5, while // performs floor division. Strings are Unicode by default,
+      with a separate bytes type for binary data, which removed a whole class of
+      encoding bugs but forced code that mixed text and bytes to be rewritten.
+      range(), dict.keys() and similar functions return lazy objects or views
+      instead of lists, and the exception syntax became except ValueError as e.
+
+
+      Python 3.0 was released in December 2010 and was deliberately not backward
+      compatible. That was the root of the slow migration: large codebases and
+      popular libraries had to be ported, and applications could not move until
+      their dependencies had. Tools such as 2to3 and the six compatibility library
+      helped, and many projects maintained code that ran on both versions for
+      years.
+
+
+      Python 2.7, released in 2010, was the final 2.x release and received an
+      unusually long support period. Python 2 officially reached end of life on 1
+      January 2020, which finally pushed the remaining holdouts to migrate.
+    planted:
+      - type: factual
+        span: "Python 3.0 was released in December 2010"
+        description: "Python 3.0 was released in December 2008, not 2010."
+
+  - id: everest-boiling-point
+    status: ready
+    tags: [wrong-number, domain-science]
+    question: |
+      Why does water boil at a lower temperature at high altitude, and how much
+      lower is it on Everest?
+    output: >
+      Water boils when its vapour pressure equals the pressure of the surrounding
+      air. At sea level, air pressure is about 101.3 kPa, and water reaches that
+      vapour pressure at 100°C.
+
+
+      As you climb, there is less air above you, so atmospheric pressure drops.
+      Water then needs less heat to reach a vapour pressure that matches it, so it
+      boils at a lower temperature. In Denver, at about 1,600 metres, water boils
+      at roughly 95°C.
+
+
+      On the summit of Everest, at about 8,849 metres, air pressure is only about a
+      third of sea-level pressure, and water boils at around 50°C. That is why
+      food cooked by boiling takes much longer at altitude: the water simply cannot
+      get as hot. Mountaineers and people living at high altitude often use
+      pressure cookers, which raise the pressure inside the pot and therefore the
+      boiling point.
+    planted:
+      - type: factual
+        span: "boils at around 50°C"
+        description: "Water boils at roughly 70°C on the summit of Everest, not 50°C."
+
+  - id: adult-bone-count
+    status: ready
+    tags: [wrong-number, domain-health]
+    question: |
+      How many bones does the human body have, and why do babies have more?
+    output: >
+      An adult human skeleton typically has 212 bones, although the exact number
+      varies slightly between people because of extra small sesamoid bones or
+      variations in the spine and feet.
+
+
+      Newborns have roughly 270 to 300 bony elements. Many of these start as
+      cartilage or as separate ossification centres that gradually fuse during
+      childhood and adolescence. For example, the plates of the skull, separated in
+      infancy by soft spots called fontanelles, fuse together; the five vertebrae
+      of the sacrum fuse into a single bone; and the ends of long bones fuse to
+      their shafts once growth plates close, usually by the early twenties.
+
+
+      The largest bone in the body is the femur, in the thigh, and the smallest is
+      the stapes, one of the three tiny bones in the middle ear.
+    planted:
+      - type: factual
+        span: "typically has 212 bones"
+        description: "An adult skeleton typically has 206 bones, not 212."
+
+  - id: mortgage-total-interest
+    status: ready
+    tags: [wrong-number, subtle, domain-finance]
+    question: |
+      What's my monthly payment on a $200,000 30-year mortgage at 6%, and how much
+      interest will I pay overall? How does a 15-year loan compare?
+    output: >
+      The standard formula is M = P × r × (1 + r)^n / ((1 + r)^n − 1), where P is
+      the loan amount, r the monthly rate and n the number of payments. Here P =
+      200,000, r = 0.06 / 12 = 0.005 and n = 360.
+
+
+      That gives a monthly payment of about $1,199.10 (principal and interest
+      only; taxes and insurance would be extra). Over 360 payments you would pay
+      about $431,676 in total, which means total interest of about $131,676.
+
+
+      Early payments are mostly interest. In the first month, interest is 0.5% of
+      $200,000, which is $1,000, so only about $199.10 reduces the principal. The
+      balance falls slowly at first and faster in later years.
+
+
+      A 15-year loan at the same 6% rate would cost about $1,687.71 a month, roughly
+      $489 more, but total interest would be only about $103,788. In practice
+      15-year loans usually carry a slightly lower rate than 30-year loans, which
+      widens the saving further.
+    planted:
+      - type: factual
+        span: "total interest of about $131,676"
+        description: "Total interest is about $231,676 ($431,676 paid minus the $200,000 principal), not $131,676."
+
+  - id: south-pole-scott-name
+    status: ready
+    tags: [wrong-name, domain-history]
+    question: |
+      Who was the first person to reach the South Pole?
+    output: >
+      The Norwegian explorer Roald Amundsen led the first expedition to reach the
+      South Pole, arriving on 14 December 1911 with four companions. Sailing on the
+      ship Fram, they set up their base, Framheim, at the Bay of Whales on the Ross
+      Ice Shelf, and relied heavily on skilled skiing and dog sledges, which let
+      them move quickly and carry enough supplies.
+
+
+      A British expedition led by Ernest Shackleton reached the pole about five
+      weeks later, on 17 January 1912, only to find Amundsen's tent and a
+      Norwegian flag already there. The British party had relied largely on
+      man-hauling their sledges after their ponies and motor sledges failed. All
+      five men in the polar party died on the return journey; a search party
+      found the bodies of three of them later that year.
+    planted:
+      - type: factual
+        span: "A British expedition led by Ernest Shackleton"
+        description: "The British party that reached the pole in January 1912 and died on the return was led by Robert Falcon Scott, not Ernest Shackleton."
+
+  - id: dna-photo-51-name
+    status: ready
+    tags: [wrong-name, domain-science]
+    question: |
+      How was the double-helix structure of DNA discovered?
+    output: >
+      James Watson and Francis Crick, working at the Cavendish Laboratory in
+      Cambridge, proposed the double-helix model of DNA in a short paper in Nature
+      in April 1953. They did not run experiments themselves; they built physical
+      models that had to fit the existing chemical and physical data.
+
+
+      Two pieces of evidence were crucial. Chargaff's rules showed that in DNA the
+      amount of adenine equals thymine and guanine equals cytosine, which pointed
+      to specific base pairing. And X-ray diffraction images produced in Linus
+      Pauling's laboratory at Caltech, especially the image known as Photo 51,
+      revealed the characteristic X-shaped pattern of a helix and gave key
+      measurements of its dimensions.
+
+
+      Their model explained how genetic information could be copied: the two
+      strands separate, and each acts as a template for a new partner strand.
+      Watson, Crick and Maurice Wilkins received the Nobel Prize in Physiology or
+      Medicine in 1962.
+    planted:
+      - type: factual
+        span: "produced in Linus Pauling's laboratory at Caltech"
+        description: "Photo 51 was produced at King's College London by Rosalind Franklin and her student Raymond Gosling, not in Linus Pauling's lab."
+
+  - id: github-acquirer-name
+    status: ready
+    tags: [wrong-name, subtle, domain-programming]
+    question: |
+      Give me a brief history of version control systems.
+    output: >
+      Early version control tracked changes to individual files. RCS, from the
+      early 1980s, versioned single files, and CVS built on it to manage whole
+      projects with a central server. Subversion (SVN) appeared in 2000 as a
+      cleaner replacement for CVS, adding atomic commits and better handling of
+      directories, and it became the default for many teams.
+
+
+      Distributed systems changed the model: every developer has a full copy of
+      the history and can commit locally. Linus Torvalds created Git in 2005 after
+      the Linux kernel project lost free access to the proprietary BitKeeper
+      system. Mercurial was released the same year with similar goals. Git's speed
+      and cheap branching made new workflows practical.
+
+
+      Hosting platforms then drove adoption. GitHub launched in 2008 and made pull
+      requests and social coding mainstream. It was acquired by Google in 2018 for
+      about $7.5 billion in stock. GitLab and Bitbucket offer similar hosting, and
+      today Git is used by the overwhelming majority of developers.
+    planted:
+      - type: factual
+        span: "acquired by Google in 2018"
+        description: "GitHub was acquired by Microsoft (announced June 2018), not Google."
+
+  - id: coffee-caffeine-amount
+    status: ready
+    tags: [wrong-number, subtle, domain-health]
+    question: |
+      How much caffeine is safe per day, and how much is in coffee?
+    output: >
+      For most healthy adults, the US Food and Drug Administration says up to 400
+      mg of caffeine a day is not generally associated with dangerous or negative
+      effects. Sensitivity varies a lot, though; some people get jittery,
+      anxious, or have trouble sleeping at much lower doses.
+
+
+      A typical 8-ounce (240 ml) cup of brewed coffee contains about 300 mg of
+      caffeine, although the amount varies with the beans, roast and brewing
+      method. A single shot of espresso has roughly 60 to 65 mg, a cup of black
+      tea around 40 to 50 mg, and a 12-ounce can of cola around 30 to 40 mg.
+
+
+      Caffeine's half-life in adults averages around five hours but varies widely,
+      so an afternoon coffee can still affect sleep at bedtime. People who are
+      pregnant are generally advised to keep intake under 200 mg a day, and anyone
+      with heart rhythm problems, anxiety disorders or who takes certain
+      medications should check their limit with a doctor.
+    planted:
+      - type: factual
+        span: "contains about 300 mg of caffeine"
+        description: "An 8-oz cup of brewed coffee contains roughly 80–100 mg of caffeine, not about 300 mg."
+
+# =============================================================================
+# LOGIC (8)
+# =============================================================================
+
+  - id: tomato-fruit-contradiction
+    status: ready
+    tags: [contradiction, domain-science]
+    question: |
+      Is a tomato a fruit or a vegetable?
+    output: >
+      Botanically, a tomato is a fruit. In botany, a fruit is the structure that
+      develops from the ovary of a flowering plant after pollination and contains
+      the seeds, and a tomato fits that definition exactly. By the same logic,
+      cucumbers, peppers, aubergines and pumpkins are botanical fruits too.
+
+
+      In cooking, though, tomatoes are treated as vegetables because they are
+      savoury rather than sweet and are used in main dishes and salads rather than
+      desserts. The US Supreme Court even ruled in Nix v. Hedden (1893) that
+      tomatoes should be taxed as vegetables under tariff law, based on how people
+      commonly used them.
+
+
+      So, strictly in the botanical sense, tomatoes are classified as vegetables
+      because they grow from the plant's flower. Which label is right depends on
+      whether you are talking about plant biology or the kitchen.
+    planted:
+      - type: logic
+        span: "So, strictly in the botanical sense, tomatoes are classified as vegetables because they grow from the plant's flower."
+        description: "Contradicts the earlier, correct statement that botanically a tomato is a fruit precisely because it develops from the flower's ovary."
+
+  - id: roth-ira-contradiction
+    status: ready
+    tags: [contradiction, domain-finance]
+    question: |
+      What's the difference between a Roth IRA and a traditional IRA?
+    output: >
+      The core difference is when you pay tax.
+
+
+      With a traditional IRA, contributions are often tax-deductible, depending on
+      your income and whether you have a workplace retirement plan, so they can
+      lower your taxable income in the year you contribute. The money grows
+      tax-deferred, and withdrawals in retirement are taxed as ordinary income.
+      You must also begin required minimum distributions in your seventies.
+
+
+      With a Roth IRA, you contribute money you have already paid tax on, so there
+      is no deduction up front. In exchange, the account grows tax-free and
+      qualified withdrawals in retirement, after age 59½ and once the account has
+      been open at least five years, are completely tax-free. Roth IRAs have no
+      required minimum distributions for the original owner, and eligibility to
+      contribute directly phases out at higher incomes.
+
+
+      The big advantage of the Roth is that your contributions lower your taxable
+      income this year, while the traditional IRA's advantage comes later. As a
+      rule of thumb, a Roth tends to suit people who expect to be in a higher tax
+      bracket in retirement, and a traditional IRA suits those who expect a lower
+      one.
+    planted:
+      - type: logic
+        span: "The big advantage of the Roth is that your contributions lower your taxable income this year"
+        description: "Contradicts the earlier correct statement that Roth contributions are made with after-tax money and get no up-front deduction; it is the traditional IRA that lowers current taxable income."
+
+  - id: list-dict-key-contradiction
+    status: ready
+    tags: [contradiction, subtle, domain-programming]
+    question: |
+      When should I use a list versus a tuple in Python?
+    output: >
+      The key difference is mutability. A list is mutable: you can append, remove
+      and change elements in place. A tuple is immutable: once created, its
+      elements cannot be reassigned.
+
+
+      That difference has practical consequences. Because tuples are immutable,
+      a tuple is hashable as long as all of its elements are hashable, so tuples
+      can be used as dictionary keys and stored in sets. Lists are unhashable, so
+      they cannot be used as dictionary keys or set members.
+
+
+      Use a list for a collection of similar items that may grow or change, such as
+      a list of user IDs you are building up. Use a tuple for a fixed group of
+      related values, often of different types, such as a (latitude, longitude)
+      pair or a row returned from a database. For a composite dictionary key, such
+      as a (city, year) pair, a list works just as well as a tuple. Tuples are also
+      slightly smaller in memory and signal to readers that the data is not meant
+      to change. If you need a fixed record with named fields, consider
+      collections.namedtuple or a dataclass.
+    planted:
+      - type: logic
+        span: "For a composite dictionary key, such as a (city, year) pair, a list works just as well as a tuple."
+        description: "Contradicts the earlier, correct statement that lists are unhashable and cannot be dictionary keys."
+
+  - id: redesign-sales-unsupported
+    status: ready
+    tags: [unsupported-conclusion, domain-business]
+    question: |
+      We launched our website redesign in March and sales rose 12% in April
+      compared with March. Did the redesign work?
+    output: >
+      It's worth looking at what else could explain the increase before crediting
+      the redesign.
+
+
+      Seasonality is the first thing to check. If April is usually a strong month
+      for your business, part of the rise would have happened anyway; for
+      example, if the past two Aprils were up 8% and 10% over March, a 12% rise is
+      only slightly above normal. Second, check whether anything else changed at
+      the same time, such as an email campaign, a price change, a promotion or
+      higher advertising spend. Third, one month is a short window, and new
+      designs sometimes get a novelty bump that fades.
+
+
+      Taken together, the redesign is clearly responsible for the 12% increase, so
+      you should roll the same design out to your mobile app as well.
+
+
+      To measure the effect properly in future, run an A/B test that shows the old
+      and new designs to randomly assigned visitors at the same time, and compare
+      conversion rates rather than total sales.
+    planted:
+      - type: logic
+        span: "Taken together, the redesign is clearly responsible for the 12% increase"
+        description: "The answer has just listed seasonality, concurrent changes and a short window as alternative explanations, without ruling any out; the conclusion that the redesign clearly caused the rise does not follow."
+
+  - id: coffee-longevity-unsupported
+    status: ready
+    tags: [unsupported-conclusion, domain-health]
+    question: |
+      Does drinking coffee help you live longer?
+    output: >
+      Several large studies have found an association between coffee drinking and
+      lower mortality. One of the best known followed about 400,000 American
+      adults aged 50 to 71 and was published in the New England Journal of
+      Medicine in 2012. After adjusting for smoking and other factors, people who
+      drank coffee had a modestly lower risk of dying during the follow-up period
+      than those who did not, with the lowest risk among those drinking around
+      four to five cups a day.
+
+
+      This means drinking more coffee directly causes people to live longer, so
+      non-drinkers should start drinking three to four cups a day.
+
+
+      Coffee does contain antioxidants and other bioactive compounds that could
+      plausibly have health effects. It also has downsides for some people:
+      caffeine can disturb sleep, raise anxiety, and cause palpitations, and
+      people who are pregnant are generally advised to limit caffeine.
+    planted:
+      - type: logic
+        span: "This means drinking more coffee directly causes people to live longer"
+        description: "Observational associations cannot establish causation (healthier or wealthier people may drink more coffee); the causal claim and the recommendation do not follow from the evidence described."
+
+  - id: active-fund-unsupported
+    status: ready
+    tags: [unsupported-conclusion, subtle, domain-finance]
+    question: |
+      An actively managed fund has returned 20% a year for the last three years,
+      versus 10% for an S&P 500 index fund. The active fund charges 1% a year; the
+      index fund charges 0.05%. Should I switch?
+    output: >
+      The fee difference matters more than it looks. A 0.95-percentage-point gap
+      compounds over decades: on a $100,000 portfolio growing at 7% a year, it
+      would cost you on the order of $150,000 or more over 30 years compared with
+      the cheaper fund.
+
+
+      Three years is also a short track record. A fund can beat the market for a
+      few years through luck, a concentrated bet on one sector, or simply being
+      positioned for a particular market environment. S&P's long-running SPIVA
+      reports have consistently found that a large majority of actively managed US
+      large-cap funds underperform the S&P 500 over 10 to 15 years.
+
+
+      Given its three-year record, the fund's managers have demonstrated an edge
+      that will keep it ahead of the index going forward, so the higher fee is
+      justified.
+
+
+      Before switching, check what drove the returns, how concentrated the
+      portfolio is, whether the fund's style has simply been in favour, and what
+      tax you would owe on selling your current holding if it is in a taxable
+      account.
+    planted:
+      - type: logic
+        span: "the fund's managers have demonstrated an edge that will keep it ahead of the index going forward"
+        description: "Three years of past outperformance does not demonstrate persistent skill, and the answer itself just explained why short records and the SPIVA data argue against that conclusion."
+    notes: >
+      Check the fee-drag figure yourself: 100k at 7% for 30y ≈ 761k; at 6.05% ≈ 584k;
+      gap ≈ 179k, so 'on the order of $150,000 or more' holds.
+
+  - id: english-science-circular
+    status: ready
+    tags: [circular, domain-history]
+    question: |
+      Why is English the main language of science?
+    output: >
+      It wasn't always. Latin was the shared language of European scholarship into
+      the 18th century, and in the early 20th century much important science was
+      published in German and French, with German especially strong in chemistry
+      and physics.
+
+
+      Several 20th-century events shifted the balance. After the First World War,
+      German and Austrian scientists were excluded from many international
+      scientific organisations and conferences for years. In the 1930s, Nazi
+      persecution drove many leading scientists to emigrate, a large number of
+      them to the United States and Britain. After the Second World War, the
+      United States became the world's largest funder of research, and its
+      universities, journals and citation databases became central to
+      international science.
+
+
+      And the reason researchers around the world choose to publish in English is
+      simply that English is the language of science.
+
+
+      Today the most-cited journals publish mainly in English, so researchers who
+      want international visibility have strong incentives to use it, which
+      further reinforces its position.
+    planted:
+      - type: logic
+        span: "the reason researchers around the world choose to publish in English is simply that English is the language of science"
+        description: "Circular: it explains English's status as the language of science by asserting that English is the language of science."
+
+  - id: unit-tests-circular
+    status: ready
+    tags: [circular, subtle, domain-programming]
+    question: |
+      Why should my team bother writing unit tests?
+    output: >
+      Unit tests pay off in several concrete ways. They catch regressions: when a
+      change breaks existing behaviour, a failing test tells you immediately
+      instead of a customer telling you weeks later. They make refactoring safer,
+      because you can restructure code and confirm it still behaves the same. They
+      document intended behaviour in an executable form that, unlike comments,
+      cannot silently go out of date. And they give fast feedback, often in
+      seconds, compared with manual testing.
+
+
+      Writing tests also tends to improve design. Code that is hard to test is
+      often too tightly coupled, so the act of testing pushes you towards smaller,
+      more focused functions with clear inputs and outputs.
+
+
+      Ultimately, unit testing is a best practice because experienced teams adopt
+      it, and teams count as experienced precisely because they follow best
+      practices like unit testing.
+
+
+      Start with the code that changes most often or breaks most expensively, keep
+      tests fast and independent, and run them automatically on every commit.
+    planted:
+      - type: logic
+        span: "teams count as experienced precisely because they follow best practices like unit testing"
+        description: "Circular: unit testing is justified by experienced teams adopting it, and teams are defined as experienced by their adopting practices like unit testing."
+
+# =============================================================================
+# COMPLETENESS (8)
+# =============================================================================
+
+  - id: us-government-veto-skipped
+    status: ready
+    tags: [skipped-part, domain-civics]
+    question: |
+      What are the three branches of the US government, and how can Congress
+      override a presidential veto?
+    output: >
+      The US Constitution divides federal power among three branches.
+
+
+      The legislative branch is Congress, made up of the House of Representatives
+      and the Senate. It writes and passes laws, controls federal spending, and
+      has the power to declare war. The Senate also confirms many presidential
+      appointments and approves treaties.
+
+
+      The executive branch is headed by the President, together with the Vice
+      President and the federal departments and agencies. It enforces and
+      administers the laws, conducts foreign policy, and commands the armed forces.
+
+
+      The judicial branch consists of the Supreme Court and the lower federal
+      courts. It interprets laws and can strike down laws or government actions
+      that it finds unconstitutional, a power known as judicial review.
+
+
+      Each branch can limit the others through a system of checks and balances,
+      which was designed to prevent any one branch from becoming too powerful.
+    planted:
+      - type: completeness
+        missing: "How Congress overrides a presidential veto: a two-thirds vote in both the House and the Senate."
+        anchor: "Each branch can limit the others through a system of checks and balances"
+
+  - id: water-ethanol-why-skipped
+    status: ready
+    tags: [skipped-part, domain-science]
+    question: |
+      Compare the boiling points of water and ethanol, and explain why they differ.
+    output: >
+      At standard atmospheric pressure, water boils at 100°C, while ethanol boils
+      at about 78°C, roughly 22 degrees lower.
+
+
+      This difference has practical uses. It is the basis of distillation: when a
+      fermented mixture is gently heated, the vapour that comes off first is
+      richer in ethanol than the liquid left behind, and condensing it produces a
+      stronger spirit. Because the two liquids form an azeotrope at about 95.6%
+      ethanol by mass, simple distillation cannot produce completely pure ethanol.
+
+
+      The lower boiling point also means ethanol evaporates faster at room
+      temperature, which is why hand sanitiser and ethanol-based cleaners dry
+      quickly on the skin and on surfaces.
+    planted:
+      - type: completeness
+        missing: "An explanation of why the boiling points differ: water forms a more extensive hydrogen-bonding network per molecule than ethanol, so stronger intermolecular forces must be overcome."
+        anchor: "At standard atmospheric pressure, water boils at 100°C"
+
+  - id: reverse-string-complexity-skipped
+    status: ready
+    tags: [skipped-part, domain-programming]
+    question: |
+      Write a Python function to reverse a string and state its time complexity.
+    output: |
+      The simplest way is slicing with a step of -1:
+
+          def reverse_string(s: str) -> str:
+              return s[::-1]
+
+          print(reverse_string("hello"))  # olleh
+
+      An equivalent, more explicit version uses reversed() and join():
+
+          def reverse_string(s: str) -> str:
+              return "".join(reversed(s))
+
+      Both work for any string, including empty strings and strings with Unicode
+      characters such as accented letters, because Python strings are sequences of
+      code points. Note that some emoji and combined characters are made of several
+      code points, so reversing them code point by code point can produce odd
+      results; handling those correctly requires a library that understands
+      grapheme clusters.
+    planted:
+      - type: completeness
+        missing: "The time complexity of the function (O(n) in the length of the string), which the question explicitly asked for."
+
+  - id: student-loan-no-recommendation
+    status: ready
+    tags: [missed-point, domain-finance]
+    question: |
+      I have $20,000 spare. Should I pay off my 7% student loan or invest it in an
+      index fund?
+    output: >
+      There are good arguments on both sides.
+
+
+      Paying off the loan gives you a guaranteed return equal to the interest
+      rate, 7%, with no risk. It also frees up your monthly cash flow and removes
+      the psychological weight of debt, which many people value highly.
+
+
+      Investing in a broad stock index fund has historically returned around 10%
+      a year on average over long periods in the US market, before inflation, and
+      compounding over decades can make a large difference. However, those
+      returns are not guaranteed, and in any given year or even decade the market
+      can deliver much less or lose money.
+
+
+      Other factors also matter: whether you have an emergency fund, whether your
+      employer offers a retirement match, your tax situation, whether the loan
+      interest is tax-deductible, and how comfortable you are with risk.
+
+
+      Both are reasonable choices depending on your situation.
+    planted:
+      - type: completeness
+        missing: "An actual recommendation or decision rule for the user's case (e.g. build an emergency fund and capture any employer match first, then a guaranteed 7% is hard to beat on a risk-adjusted basis); the answer only lists pros and cons."
+        anchor: "Both are reasonable choices depending on your situation."
+
+  - id: amoxicillin-alcohol-missed
+    status: ready
+    tags: [missed-point, domain-health]
+    question: |
+      My doctor prescribed amoxicillin for a sinus infection. Can I drink alcohol
+      while taking it?
+    output: >
+      Amoxicillin is an antibiotic in the penicillin family. It works by
+      interfering with the bacteria's ability to build their cell walls, which
+      causes them to break apart and die. It is commonly prescribed for bacterial
+      infections of the ears, sinuses, throat, chest and urinary tract.
+
+
+      Common side effects include diarrhoea, nausea and a skin rash. A rash with
+      hives, swelling of the face or lips, or difficulty breathing can be a sign
+      of an allergic reaction and needs urgent medical attention. Amoxicillin only
+      works against bacteria, so it will not help viral infections such as colds
+      or flu.
+
+
+      Take it exactly as prescribed, at evenly spaced times, and don't stop early
+      or save leftover tablets without checking with your doctor or pharmacist.
+      Drink plenty of water, and contact your doctor if your symptoms do not
+      improve after a few days or get worse.
+    planted:
+      - type: completeness
+        missing: "A direct answer about alcohol: moderate drinking has no known direct interaction with amoxicillin, but alcohol can worsen side effects and slow recovery, so it's best limited; check with the doctor or pharmacist."
+
+  - id: api-word-limit-ignored
+    status: ready
+    tags: [ignored-constraint, domain-programming]
+    question: |
+      In under 50 words, explain what an API is.
+    output: >
+      An API (Application Programming Interface) is a defined set of rules that
+      lets one piece of software request data or services from another without
+      needing to know how the other system works internally. A common analogy is
+      a restaurant: you, the client, give your order to a waiter, the API, who
+      passes it to the kitchen, the server, and brings back your food, the
+      response. Web APIs usually work over HTTP: a client sends a request to a URL
+      called an endpoint, often with parameters, and the server replies with
+      structured data, typically JSON. For example, a weather app calls a weather
+      service's API to fetch today's forecast for your location rather than
+      collecting the data itself.
+    planted:
+      - type: completeness
+        missing: "Compliance with the explicit 'under 50 words' limit; the answer runs to well over 100 words."
+        anchor: "An API (Application Programming Interface) is a defined set of rules"
+
+  - id: recursion-example-ignored
+    status: ready
+    tags: [ignored-constraint, domain-programming]
+    question: |
+      Explain recursion and give a code example.
+    output: >
+      Recursion is a technique in which a function solves a problem by calling
+      itself on a smaller version of the same problem. Every recursive function
+      needs two parts. The base case is a condition simple enough to answer
+      directly, without recursion; it is what stops the process. The recursive
+      case breaks the problem into a smaller subproblem, calls the function on
+      it, and combines the result.
+
+
+      Each call is placed on the call stack with its own local variables. When the
+      base case is reached, the calls return one by one, in reverse order, and the
+      results are combined on the way back up. If the base case is missing or
+      never reached, the calls pile up until the program runs out of stack space;
+      in Python this raises a RecursionError, by default after about 1,000 levels.
+
+
+      Recursion is a natural fit for problems with a self-similar structure, such
+      as traversing trees and nested folders, parsing nested expressions, and
+      divide-and-conquer algorithms like merge sort. Any recursive function can be
+      rewritten iteratively, which is sometimes more efficient, but the recursive
+      version is often shorter and closer to how the problem is defined.
+    planted:
+      - type: completeness
+        missing: "A code example of a recursive function, which the question explicitly asked for."
+        anchor: "Recursion is a technique in which a function solves a problem by calling itself"
+
+  - id: tcp-udp-analogy-ignored
+    status: ready
+    tags: [ignored-constraint, domain-programming]
+    question: |
+      Explain the difference between TCP and UDP using a real-world analogy.
+    output: >
+      TCP (Transmission Control Protocol) is connection-oriented. Before sending
+      data, the two sides set up a connection with a three-way handshake. TCP
+      numbers every segment, acknowledges what arrives, retransmits anything that
+      is lost, and delivers data to the application in the original order. It
+      also includes flow control and congestion control so a sender does not
+      overwhelm the receiver or the network. The cost is extra overhead and
+      latency.
+
+
+      UDP (User Datagram Protocol) is connectionless. It sends independent
+      datagrams with a minimal header and no handshake, acknowledgements,
+      retransmission or ordering. Packets can arrive late, out of order, or not at
+      all, and it is up to the application to cope.
+
+
+      TCP suits anything where every byte must arrive intact, such as web pages,
+      email and file transfers. UDP suits applications where speed matters more
+      than perfect delivery, such as live video calls, online games and most DNS
+      lookups. Notably, HTTP/3 runs over QUIC, which is built on UDP and
+      implements its own reliability on top.
+    planted:
+      - type: completeness
+        missing: "A real-world analogy for the TCP/UDP difference (e.g. registered mail vs postcards), which the question explicitly required."
+        anchor: "TCP (Transmission Control Protocol) is connection-oriented."
+
+# =============================================================================
+# MIXED (4)
+# =============================================================================
+
+  - id: ww2-end-mixed
+    status: ready
+    tags: [mixed, wrong-name, skipped-part, domain-history]
+    question: |
+      When did the Second World War end in Europe and in the Pacific, and what role
+      did the atomic bombs play in Japan's surrender?
+    output: >
+      In Europe, Germany signed an unconditional surrender at Reims on 7 May 1945,
+      with a further signing in Berlin the next day. Victory in Europe (V-E) Day
+      is celebrated on 8 May 1945 in the West; the Soviet Union marked it on 9
+      May because of the time difference when the Berlin surrender took effect.
+
+
+      In the Pacific the fighting continued for another three months. Emperor
+      Hirohito announced Japan's acceptance of the Allied surrender terms in a
+      radio broadcast on 15 August 1945, the first time most Japanese people had
+      heard his voice. The formal surrender document was signed on 2 September
+      1945 aboard USS Arizona in Tokyo Bay, with General Douglas MacArthur
+      accepting on behalf of the Allies. That date is generally treated as the
+      official end of the Second World War.
+    planted:
+      - type: factual
+        span: "aboard USS Arizona"
+        description: "The formal surrender was signed aboard USS Missouri; USS Arizona was sunk at Pearl Harbor in 1941."
+      - type: completeness
+        missing: "Any discussion of the role the atomic bombs on Hiroshima and Nagasaki (6 and 9 August 1945) played in Japan's surrender, the third part of the question."
+        anchor: "In the Pacific the fighting continued for another three months."
+
+  - id: newton-laws-mixed
+    status: ready
+    tags: [mixed, wrong-date, contradiction, domain-science]
+    question: |
+      Explain Newton's three laws of motion and give an everyday example of the
+      third law.
+    output: >
+      Isaac Newton set out his three laws of motion in the Principia, published in
+      1667.
+
+
+      The first law, the law of inertia, says that an object stays at rest or
+      keeps moving in a straight line at constant speed unless a net external
+      force acts on it. That is why a ball rolling across a flat floor eventually
+      stops on its own: moving objects naturally lose their motion even when no
+      force acts on them.
+
+
+      The second law relates force, mass and acceleration: F = ma. The same force
+      produces a smaller acceleration on a heavier object, which is why it takes
+      more effort to push a loaded shopping trolley than an empty one.
+
+
+      The third law says that for every action there is an equal and opposite
+      reaction: when one object exerts a force on another, the second exerts a
+      force of equal size in the opposite direction on the first. An everyday
+      example is swimming. Your hands and feet push water backwards, and the water
+      pushes you forwards with an equal force. Rockets work the same way, pushing
+      exhaust gases out of the back and being pushed forward in return.
+    planted:
+      - type: factual
+        span: "published in 1667"
+        description: "Newton's Principia was published in 1687, not 1667."
+      - type: logic
+        span: "moving objects naturally lose their motion even when no force acts on them"
+        description: "Contradicts the first law just stated; the ball stops because friction and air resistance act on it, not because objects slow down without a force."
+
+  - id: process-thread-mixed
+    status: ready
+    tags: [mixed, wrong-claim, skipped-part, domain-programming]
+    question: |
+      Explain the difference between a process and a thread, and give one
+      advantage of each.
+    output: >
+      A process is an instance of a running program that the operating system
+      schedules and manages, together with resources such as open file handles.
+      A thread is a single sequence of execution within a process. Every process
+      has at least one thread, and many have several.
+
+
+      Threads in the same process share its heap, global variables and open files,
+      but each thread has its own stack and its own register state, including the
+      program counter. By default, separate processes share the same address
+      space, which is why they can read each other's variables directly.
+
+
+      An advantage of threads is that they are cheap to create and switch between
+      compared with processes, and because they share memory they can exchange data
+      quickly without copying it. The trade-off is that shared memory makes race
+      conditions possible, so access to shared data usually needs locks or other
+      synchronisation.
+    planted:
+      - type: factual
+        span: "By default, separate processes share the same address space"
+        description: "By default each process has its own separate address space; processes cannot read each other's variables directly and must use inter-process communication or explicitly shared memory."
+      - type: completeness
+        missing: "An advantage of processes (e.g. isolation: a crash or memory corruption in one process does not bring down others; in CPython, separate processes also avoid the GIL)."
+        anchor: "An advantage of threads is that they are cheap to create"
+
+  - id: index-fund-mixed
+    status: ready
+    tags: [mixed, wrong-name, wrong-number, unsupported-conclusion, domain-finance]
+    question: |
+      What is an index fund, what does it typically cost, and what's the main risk?
+    output: >
+      An index fund is a mutual fund or exchange-traded fund that aims to match the
+      performance of a market index, such as the S&P 500, by holding the same
+      securities in the same proportions, rather than trying to pick winners. The
+      idea was popularised for ordinary investors by John Bogle, who founded
+      Fidelity in 1975 and launched the first index mutual fund for retail
+      investors the following year.
+
+
+      Because there is no team of analysts picking stocks and trading is minimal,
+      costs are low. Broad index funds typically charge around 1.5% a year, far
+      less than many actively managed funds.
+
+
+      The main risk is market risk: an index fund rises and falls with the market
+      it tracks. The S&P 500 fell by roughly 57% from its peak in October 2007 to
+      its low in March 2009, and an S&P 500 index fund fell with it. Because an
+      index fund holds hundreds of companies, it can't lose money over any
+      five-year period, so it is a safe place for money you need next year.
+    planted:
+      - type: factual
+        span: "Fidelity in 1975"
+        description: "John Bogle founded Vanguard in 1975, not Fidelity."
+      - type: factual
+        span: "typically charge around 1.5% a year"
+        description: "Broad index funds typically charge well under 0.2% a year; the cheapest S&P 500 funds charge around 0.03% or less."
+      - type: logic
+        span: "Because an index fund holds hundreds of companies, it can't lose money over any five-year period"
+        description: "Diversification across companies does not remove market risk; the answer's own 2007–2009 example shows a broad index fund can lose heavily, so the conclusion (and the 'safe for money you need next year' advice) does not follow."
