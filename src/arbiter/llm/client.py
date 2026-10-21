@@ -407,10 +407,12 @@ class LLMClient:
             reask=reask,
             started_at=datetime.now(UTC),
         )
-        start = time.perf_counter()
         async with self._semaphore:
+            # timed INSIDE the semaphore: queueing behind other calls is not provider latency
+            start = time.perf_counter()
             try:
                 completion: ChatCompletion = await client.chat.completions.create(**kwargs)
+                elapsed = time.perf_counter() - start
                 choice = completion.choices[0] if completion.choices else None
                 if choice is None or (
                     not (choice.message.content or "").strip() and choice.finish_reason != "length"
@@ -433,7 +435,7 @@ class LLMClient:
             calls,
             CallRecord(
                 **record,
-                latency_s=time.perf_counter() - start,
+                latency_s=elapsed,
                 success=True,
                 finish_reason=choice.finish_reason,
                 input_tokens=tokens.input_tokens,

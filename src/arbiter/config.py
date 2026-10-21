@@ -112,6 +112,13 @@ class DisagreementConfig(_Strict):
     low_confidence_below: float = Field(default=0.5, ge=0, le=1)
 
 
+class EvaluationConfig(_Strict):
+    """Phase 5 evaluation settings."""
+
+    span_min_overlap: float = Field(default=0.5, gt=0, le=1)
+    case_concurrency: int = Field(default=3, ge=1, le=32)
+
+
 class VerdictConfig(_Strict):
     """How a verdict turns into pass/fail."""
 
@@ -134,6 +141,7 @@ class AppConfig(_Strict):
     limits: LimitsConfig = LimitsConfig()
     disagreement: DisagreementConfig = DisagreementConfig()
     verdict: VerdictConfig = VerdictConfig()
+    evaluation: EvaluationConfig = EvaluationConfig()
     paths: PathsConfig = PathsConfig()
 
     @model_validator(mode="after")

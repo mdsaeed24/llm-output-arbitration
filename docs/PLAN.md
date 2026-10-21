@@ -33,11 +33,11 @@ llm-0utput-arbitration/
 ├── requirements.lock        # exact versions (used by Docker)
 ├── Dockerfile, docker-compose.yml          (Phase 7)
 ├── data/testset.yaml        # YOUR hand-written cases + answer keys   (Phase 4: format + 3 examples ✅)
-├── reports/eval_report.md   # generated                                (Phase 5)
+├── reports/eval_report.md   # generated (+ eval_metrics.json)          (Phase 5 ✅)
 ├── docs/PLAN.md
 ├── scripts/
 │   ├── case_builder.py      # draft CLEAN answers; `check` coverage     (Phase 4 ✅)
-│   ├── evaluate.py          # system vs baseline vs ablations          (Phase 5)
+│   ├── evaluate.py          # system vs baseline vs ablations; --resume/--from-run (Phase 5 ✅)
 │   ├── run_critics.py       # debug: critics only, no graph             (Phase 1 ✅)
 │   ├── arbitrate.py         # live end-to-end run / --mermaid           (Phase 2 ✅)
 │   └── seed_demo.py         # demo arbitrations for the UI             (Phase 7)
@@ -70,7 +70,12 @@ llm-0utput-arbitration/
 │   ├── baseline.py          #   single-reviewer baseline (same rules)     (Phase 3 ✅)
 │   ├── pipeline.py          #   Arbiter: public entry point               (Phase 2 ✅)
 │   ├── casebuilder.py       #   drafting, YAML append, coverage report    (Phase 4 ✅)
-│   ├── evaluation/          #   span matching, metrics, ablations, report (Phase 5)
+│   ├── evaluation/          #                                             (Phase 5 ✅)
+│   │   ├── findings.py      #   every variant → common Finding list (ablations from 1 run)
+│   │   ├── matching.py      #   span rule + blind, cached LLM judge for omissions
+│   │   ├── metrics.py       #   recall/precision/FF/accuracy, Wilson CI, exact McNemar, analytics
+│   │   ├── runner.py        #   run + persist per case (resume), score
+│   │   └── report.py        #   eval_report.md (headline generated from the numbers)
 │   ├── storage/db.py        #   SQLite audit trail                       (Phase 6)
 │   ├── api/main.py          #   FastAPI                                  (Phase 6)
 │   └── ui/                  #   Streamlit Verdict Explorer               (Phase 6)
@@ -125,6 +130,10 @@ llm-0utput-arbitration/
   evaluated. An unreviewed LLM draft could hide a real error that would be scored as a false
   flag. The case builder only ever drafts CLEAN answers (a test asserts its prompt never
   mentions errors); humans plant and record every error.
+- **Evaluation statistics (Phase 5):** every rate gets a 95% Wilson interval; system vs
+  baseline is compared PAIRED on the same planted issues with an exact McNemar test (only the
+  discordant pairs carry information). Latency = critical-path LLM time (slowest critic +
+  adjudicator, timed inside the concurrency slot) so eval concurrency doesn't distort it.
 - **Baseline fairness:** same model as the adjudicator, same quote rules, severity definitions
   and per-dimension checklists (shared prompt blocks), same quote validation and pass/fail
   threshold, typed issues so the Phase 5 matching rules apply identically.
@@ -154,6 +163,12 @@ llm-0utput-arbitration/
   Gemini 3 reasoning **cannot be disabled** (`minimal` is rejected with HTTP 400);
   `reasoning_effort: low` still used ~425 hidden thinking tokens per critique. They appear only as
   `total_tokens - prompt - completion`, which telemetry bills as output.
+- **Logic critic switched to `gemini-3.5-flash-lite` (2026-10-21).** The free tier allows only
+  20 requests/day for `gemini-3.6-flash` (429 body: quotaId
+  `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, quotaValue 20) plus 5/minute; a 40-case
+  eval needs 40+. The first full run was stopped at 37 cases after the quota ran out (13 cases
+  had a logic critic) and discarded; every case in the reported run uses Flash-Lite. Quotas are
+  per model, so Flash-Lite starts fresh. Trade-off: a weaker logic critic.
 - Ollama `http://localhost:11434/v1`: optional extra critic only.
 
 ## Honest limitations (to carry into the README)

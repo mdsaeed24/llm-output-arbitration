@@ -33,7 +33,7 @@ def test_default_specs_cover_three_dimensions_on_configured_models(config: AppCo
     specs = {s.dimension: s.model_key for s in critic_specs(config)}
     assert specs == {
         Dimension.FACTUAL: "deepseek-v4-pro",
-        Dimension.LOGIC: "gemini-flash",
+        Dimension.LOGIC: "gemini-flash-lite",
         Dimension.COMPLETENESS: "deepseek-flash",
     }
 

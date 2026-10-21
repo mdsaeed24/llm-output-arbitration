@@ -53,6 +53,11 @@ models:
     # (which count toward the output cap and cost) small. Temperature is left at
     # Google's default: their docs advise against lowering it for Gemini 3.
     reasoning_effort: low
+  gemini-flash-lite:
+    provider: gemini
+    model_id: gemini-3.5-flash-lite
+    pricing: {input: 0.30, cached_input: 0.30, output: 2.50}
+    reasoning_effort: low
   ollama-local:
     provider: ollama
     model_id: qwen3:8b
@@ -61,7 +66,10 @@ models:
 roles:
   critics:
     factual: deepseek-v4-pro
-    logic: gemini-flash
+    # gemini-flash (3.6) allows only 20 free-tier requests/day (measured 2026-10-21: quotaId
+    # GenerateRequestsPerDayPerProjectPerModel-FreeTier, quotaValue 20) — too few for a 40-case
+    # eval. Flash-Lite has its own quota. Switch back with billing enabled.
+    logic: gemini-flash-lite
     completeness: deepseek-flash
   # Extra critics for experiments only. Off by default. Example:
   #   extra_critics:
@@ -97,6 +105,12 @@ disagreement:
 verdict:
   # The output FAILS if any confirmed issue is at least this severe.
   fail_at_severity: medium
+
+evaluation:
+  # A found factual/logic issue catches a planted one when their spans overlap by at least
+  # this fraction of the SHORTER span (same rule as disagreement detection).
+  span_min_overlap: 0.5
+  case_concurrency: 3         # cases evaluated at once (LLM calls are still capped above)
 
 paths:
   db: data/arbiter.db

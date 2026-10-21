@@ -23,6 +23,7 @@ from arbiter.adjudication.synthesis import is_pass
 from arbiter.config import Dimension
 from arbiter.critics.prompts import CHECKS, DATA_RULE, ISSUE_RULES, question_block
 from arbiter.critics.quotes import locate_quote
+from arbiter.graph.nodes import InputError
 from arbiter.llm.client import LLMClient
 from arbiter.llm.telemetry import CallRecord
 from arbiter.schemas.critique import Issue, IssueDraft
@@ -109,6 +110,11 @@ class SingleReviewer:
         """Review ``output`` in one call and build a Verdict with the system's rules."""
         output = output.strip()
         question = (question or "").strip() or None
+        limit = self.llm.config.limits.max_input_chars
+        if not output:
+            raise InputError("output to evaluate is empty")
+        if len(output) + len(question or "") > limit:
+            raise InputError(f"input exceeds limits.max_input_chars={limit}")
         start = time.perf_counter()
         result = await self.llm.structured(
             role="baseline",

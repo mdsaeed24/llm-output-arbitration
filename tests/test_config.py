@@ -21,7 +21,7 @@ def _raw() -> dict[str, Any]:
 def test_repo_config_loads_with_default_assignments() -> None:
     cfg = load_config(REPO_CONFIG, env_file=None)
     assert cfg.roles.critics[Dimension.FACTUAL] == "deepseek-v4-pro"
-    assert cfg.roles.critics[Dimension.LOGIC] == "gemini-flash"
+    assert cfg.roles.critics[Dimension.LOGIC] == "gemini-flash-lite"
     assert cfg.roles.critics[Dimension.COMPLETENESS] == "deepseek-flash"
     assert cfg.roles.adjudicator == "deepseek-v4-pro"
     assert cfg.roles.baseline == "deepseek-v4-pro"
