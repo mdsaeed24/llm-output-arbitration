@@ -123,3 +123,16 @@ def test_yaml_round_trip(tmp_path: Path) -> None:
     path = tmp_path / "t.yaml"
     path.write_text(yaml.safe_dump({"version": 1, "cases": [_case()]}))
     assert load_testset(path).cases[0].id == "apollo-01"
+
+
+def test_status_defaults_to_draft_and_only_ready_cases_are_evaluated() -> None:
+    ts = EvalSet.model_validate(
+        {"cases": [_case(id="a"), _case(id="b", status="ready"), _case(id="c", status="draft")]}
+    )
+    assert [c.id for c in ts.ready] == ["b"]
+    assert [c.id for c in ts.drafts] == ["a", "c"]
+
+
+def test_unknown_status_rejected() -> None:
+    with pytest.raises(ValidationError):
+        EvalCase.model_validate(_case(status="done"))

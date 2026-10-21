@@ -16,6 +16,7 @@ is an error in the answer key and would silently corrupt every metric.
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from pathlib import Path
 from typing import Annotated, Literal
@@ -24,6 +25,20 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from arbiter.config import Dimension
+
+
+def find_all(text: str, needle: str) -> list[tuple[int, int]]:
+    """Exact-character matches of ``needle`` in ``text``, where any run of whitespace in the
+    needle matches any run of whitespace in the text.
+
+    So a span copied across a wrapped YAML line ("scatters the most" vs "scatters\nthe most")
+    still matches. Everything else — letters, digits, punctuation, case — must be identical.
+    """
+    words = needle.split()
+    if not words:
+        return []
+    pattern = re.compile(r"\s+".join(re.escape(w) for w in words))
+    return [m.span() for m in pattern.finditer(text)]
 
 
 class _Strict(BaseModel):
@@ -70,20 +85,26 @@ class EvalCase(_Strict):
     planted: list[PlantedIssue] = Field(
         default_factory=list, description="Answer key. Empty list = clean case."
     )
+    status: Literal["draft", "ready"] = Field(
+        "draft",
+        description="Only 'ready' cases are evaluated. Mark a case ready once YOU have checked "
+        "the output and its answer key — an unreviewed draft might hide a real error that "
+        "would be scored as a false flag.",
+    )
     tags: list[str] = Field(default_factory=list)
     notes: str | None = None
 
     @field_validator("question", "output")
     @classmethod
     def _strip(cls, v: str | None) -> str | None:
-        # YAML block scalars (`|`) add a trailing newline; offsets are computed on stripped text.
+        # YAML block scalars add a trailing newline; offsets are computed on stripped text.
         return v.strip() if isinstance(v, str) else v
 
     @model_validator(mode="after")
     def _spans_exist_in_output(self) -> EvalCase:
         for n, issue in enumerate(self.planted, start=1):
             if isinstance(issue, PlantedSpanIssue):
-                count = self.output.count(issue.span)
+                count = len(find_all(self.output, issue.span))
                 if count != 1:
                     problem = "not found in" if count == 0 else f"appears {count} times in"
                     hint = "copy it exactly" if count == 0 else "make it longer so it is unique"
@@ -91,7 +112,7 @@ class EvalCase(_Strict):
                         f"case '{self.id}' planted #{n}: span {issue.span!r} {problem} "
                         f"the output ({hint})"
                     )
-            elif issue.anchor is not None and issue.anchor not in self.output:
+            elif issue.anchor is not None and not find_all(self.output, issue.anchor):
                 raise ValueError(
                     f"case '{self.id}' planted #{n}: anchor {issue.anchor!r} not found in output"
                 )
@@ -107,8 +128,7 @@ class EvalCase(_Strict):
         text = issue.span if isinstance(issue, PlantedSpanIssue) else issue.anchor
         if text is None:
             return None
-        start = self.output.index(text)
-        return start, start + len(text)
+        return find_all(self.output, text)[0]
 
 
 class EvalSet(_Strict):
@@ -116,6 +136,16 @@ class EvalSet(_Strict):
 
     version: Literal[1] = 1
     cases: list[EvalCase] = Field(default_factory=list)
+
+    @property
+    def ready(self) -> list[EvalCase]:
+        """Cases a human has marked ready — the only ones the evaluation runs on."""
+        return [c for c in self.cases if c.status == "ready"]
+
+    @property
+    def drafts(self) -> list[EvalCase]:
+        """Cases still awaiting review."""
+        return [c for c in self.cases if c.status == "draft"]
 
     @model_validator(mode="after")
     def _unique_ids(self) -> EvalSet:

@@ -32,11 +32,11 @@ llm-0utput-arbitration/
 ├── pyproject.toml           # deps + ruff/mypy/pytest config
 ├── requirements.lock        # exact versions (used by Docker)
 ├── Dockerfile, docker-compose.yml          (Phase 7)
-├── data/testset.yaml        # YOUR hand-written cases + answer keys   (Phase 4)
+├── data/testset.yaml        # YOUR hand-written cases + answer keys   (Phase 4: format + 3 examples ✅)
 ├── reports/eval_report.md   # generated                                (Phase 5)
 ├── docs/PLAN.md
 ├── scripts/
-│   ├── case_builder.py      # drafts CLEAN answers only                (Phase 4)
+│   ├── case_builder.py      # draft CLEAN answers; `check` coverage     (Phase 4 ✅)
 │   ├── evaluate.py          # system vs baseline vs ablations          (Phase 5)
 │   ├── run_critics.py       # debug: critics only, no graph             (Phase 1 ✅)
 │   ├── arbitrate.py         # live end-to-end run / --mermaid           (Phase 2 ✅)
@@ -69,6 +69,7 @@ llm-0utput-arbitration/
 │   │   └── llm.py           #   LLM adjudicator, one ruling per group     (Phase 3 ✅)
 │   ├── baseline.py          #   single-reviewer baseline (same rules)     (Phase 3 ✅)
 │   ├── pipeline.py          #   Arbiter: public entry point               (Phase 2 ✅)
+│   ├── casebuilder.py       #   drafting, YAML append, coverage report    (Phase 4 ✅)
 │   ├── evaluation/          #   span matching, metrics, ablations, report (Phase 5)
 │   ├── storage/db.py        #   SQLite audit trail                       (Phase 6)
 │   ├── api/main.py          #   FastAPI                                  (Phase 6)
@@ -120,6 +121,10 @@ llm-0utput-arbitration/
   findings the system would just be "baseline + extras" and the comparison would be rigged.
 - **Adjudicator failure degrades, not crashes:** union of critic issues at half confidence,
   verdict status `degraded`, reason recorded.
+- **Human gate on test cases:** every case has `status: draft|ready`; only `ready` cases are
+  evaluated. An unreviewed LLM draft could hide a real error that would be scored as a false
+  flag. The case builder only ever drafts CLEAN answers (a test asserts its prompt never
+  mentions errors); humans plant and record every error.
 - **Baseline fairness:** same model as the adjudicator, same quote rules, severity definitions
   and per-dimension checklists (shared prompt blocks), same quote validation and pass/fail
   threshold, typed issues so the Phase 5 matching rules apply identically.
