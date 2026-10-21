@@ -76,9 +76,9 @@ llm-0utput-arbitration/
 │   │   ├── metrics.py       #   recall/precision/FF/accuracy, Wilson CI, exact McNemar, analytics
 │   │   ├── runner.py        #   run + persist per case (resume), score
 │   │   └── report.py        #   eval_report.md (headline generated from the numbers)
-│   ├── storage/db.py        #   SQLite audit trail                       (Phase 6)
-│   ├── api/main.py          #   FastAPI                                  (Phase 6)
-│   └── ui/                  #   Streamlit Verdict Explorer               (Phase 6)
+│   ├── storage/db.py        #   SQLite audit trail (WAL, summary columns + full JSON) (Phase 6 ✅)
+│   ├── api/                 #   FastAPI: main.py (app factory), schemas.py (OpenAPI) (Phase 6 ✅)
+│   └── ui/                  #   Streamlit: app.py + pages/, render.py (pure, tested), data.py (Phase 6 ✅)
 └── tests/                   # pytest; every LLM call mocked
 ```
 
@@ -134,6 +134,10 @@ llm-0utput-arbitration/
   baseline is compared PAIRED on the same planted issues with an exact McNemar test (only the
   discordant pairs carry information). Latency = critical-path LLM time (slowest critic +
   adjudicator, timed inside the concurrency slot) so eval concurrency doesn't distort it.
+- **UI treats LLM text as hostile (Phase 6):** the evaluated output and every critic/adjudicator
+  explanation are html-escaped, and the evidence JSON inlined in the page's <script> is
+  additionally escaped so "</script>" can't break out (tested with an injection payload).
+  The API is the only writer to SQLite; the UI reads the shared file and submits via the API.
 - **Baseline fairness:** same model as the adjudicator, same quote rules, severity definitions
   and per-dimension checklists (shared prompt blocks), same quote validation and pass/fail
   threshold, typed issues so the Phase 5 matching rules apply identically.
