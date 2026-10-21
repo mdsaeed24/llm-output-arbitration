@@ -1,6 +1,6 @@
 # Evaluation: multi-critic arbitration vs a single reviewer
 
-> Generated 2026-10-21 08:42 UTC from run `reports/runs/20261021-083839` · 40 cases (10 clean, 30 with 35 hand-planted issues) · total spend $0.301 · code `ca5a1d2` · logic critic `gemini-3.5-flash-lite`
+> Generated 2026-10-21 08:42 UTC from run `reports/runs/20261021-083839` · 40 cases (10 clean, 30 with 35 hand-planted issues) · total spend $0.301 · code `ce3febb` · logic critic `gemini-3.5-flash-lite`
 
 > **Note:** SECOND ATTEMPT, tuned on the same 40 cases after seeing v1 (eval_report.md): tighter completeness scope (critic + baseline), no-duplicate rule for the completeness critic, adjudicator told to dismiss duplicates and nitpicks. Because the changes were chosen after looking at these cases, these numbers are optimistic; v1 is the pre-registered result.
 
