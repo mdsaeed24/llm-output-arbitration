@@ -95,15 +95,20 @@ union of critic issues at half confidence.
 
 ## Verdict Explorer
 
-> 📸 *Screenshot placeholder:* `docs/screenshots/verdict-view.png`. Evaluated text with red
-> (confirmed), amber (low-confidence) and grey (dismissed) highlights; clicking one opens its
-> evidence chain: critic flag → disagreement → adjudicator ruling → final status.
+![Verdict view: evaluated text with confirmed (red), low-confidence (amber) and dismissed (grey) highlights](docs/screenshots/verdict-view.png)
 
-> 📸 *Screenshot placeholder:* `docs/screenshots/critic-comparison.png`. Critics side by side
-> (score, confidence, issues, verified claims), plus the agreements and disagreements tables.
+*Verdict view: each highlight is tagged and clickable, opening its evidence chain (critic flag →
+disagreement → adjudicator ruling → final status).*
 
-> 📸 *Screenshot placeholder:* `docs/screenshots/eval-results.png`. The analytics page:
-> system vs single reviewer, ablations, critic analytics, v1/v2 switch.
+![Critic comparison: three critics side by side with agreements and disagreements](docs/screenshots/critic-comparison.png)
+
+*Critic comparison: per-critic scores, issues and verified claims, plus where the critics agreed
+and which disagreements the adjudicator had to resolve.*
+
+![Evaluation analytics: system vs single reviewer, ablations and charts](docs/screenshots/eval-results.png)
+
+*Evaluation analytics: the measured comparison, every ablation, and recall and false flags by
+type (v1 shown; v2 is one click away).*
 
 ## Architecture decisions
 

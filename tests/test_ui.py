@@ -202,3 +202,10 @@ def test_verdict_page_with_empty_db(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     monkeypatch.chdir(REPO_ROOT)
     at = _run("verdict.py")
     assert any("No arbitrations stored yet" in i.value for i in at.info)
+
+
+async def test_completeness_verified_claims_are_marked_ignored(config: AppConfig) -> None:
+    r = await _flawed(config)
+    cols = {c.critic: c for c in critic_columns(r)}
+    assert cols["completeness"].verified_ignored
+    assert not cols["factual"].verified_ignored

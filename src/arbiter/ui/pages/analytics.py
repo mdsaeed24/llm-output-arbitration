@@ -77,7 +77,9 @@ table = pd.DataFrame(
         for k, v in var.items()
     ]
 )
-pct = st.column_config.NumberColumn(format="percent")
+pct = st.column_config.NumberColumn(format="%.0f%%")  # whole percentages: n is small
+PCT_COLS = ["recall", "factual", "logic", "completeness", "precision", "verdict acc."]
+table[PCT_COLS] = table[PCT_COLS] * 100
 st.dataframe(
     table,
     hide_index=True,
@@ -100,13 +102,23 @@ st.caption(
 
 
 # ---------------------------------------------------------------- charts (2 series each)
-def _bars(df: pd.DataFrame, y: str, y_title: str, fmt: str) -> alt.Chart:
+def _bars(df: pd.DataFrame, y: str, y_title: str, fmt: str, order: list[str]) -> alt.Chart:
     chart: alt.Chart = (
         alt.Chart(df)
-        .mark_bar(cornerRadiusEnd=4, size=22)
+        .mark_bar(cornerRadiusEnd=4)
         .encode(
-            x=alt.X("group:N", title=None, axis=alt.Axis(labelAngle=0)),
-            xOffset=alt.XOffset("who:N", sort=["Full system", "Single reviewer"]),
+            x=alt.X(
+                "group:N",
+                title=None,
+                sort=order,
+                axis=alt.Axis(labelAngle=0),
+                scale=alt.Scale(paddingInner=0.45, paddingOuter=0.25),
+            ),
+            xOffset=alt.XOffset(
+                "who:N",
+                sort=["Full system", "Single reviewer"],
+                scale=alt.Scale(paddingInner=0.06),  # small surface gap between the pair
+            ),
             y=alt.Y(f"{y}:Q", title=y_title, axis=alt.Axis(format=fmt, grid=True)),
             color=alt.Color(
                 "who:N",
@@ -144,7 +156,10 @@ with left:
                     "detail": f"{bt['caught']}/{bt['total']}",
                 }
             )
-    st.altair_chart(_bars(pd.DataFrame(rows), "recall", "Recall", ".0%"), width="stretch")
+    st.altair_chart(
+        _bars(pd.DataFrame(rows), "recall", "Recall", ".0%", ["factual", "logic", "completeness"]),
+        width="stretch",
+    )
 with right:
     st.markdown("**False flags**")
     rows = []
@@ -170,7 +185,16 @@ with right:
                 "detail": str(v["false_flags_ge_medium"]),
             },
         ]
-    st.altair_chart(_bars(pd.DataFrame(rows), "flags", "False flags", "d"), width="stretch")
+    st.altair_chart(
+        _bars(
+            pd.DataFrame(rows),
+            "flags",
+            "False flags",
+            "d",
+            ["strict rule", "excl. restatements", "≥ medium only"],
+        ),
+        width="stretch",
+    )
 
 # ---------------------------------------------------------------- critic & adjudicator
 st.subheader("Critic analytics")
@@ -181,11 +205,11 @@ crit = pd.DataFrame(
             "model": x["model_id"],
             "valid issues": x["valid_issues"],
             "true positives": x["true_positives"],
-            "precision": x["precision"],
+            "precision": x["precision"] * 100,
             "unique catches": x["unique_catches"],
             "overruled": f"{x['overruled']}/{x['adjudicated']}",
             "overruled & really false": x["overruled_false_flags"],
-            "hallucinated quotes": x["hallucination_rate"],
+            "hallucinated quotes": x["hallucination_rate"] * 100,
         }
         for x in m["critics"]
     ]

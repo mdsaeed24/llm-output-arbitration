@@ -14,6 +14,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Literal
 
+from arbiter.config import Dimension
 from arbiter.schemas.critique import Critique, Issue
 from arbiter.schemas.verdict import ArbitrationResult, ConfirmedIssue, DismissedFlag
 
@@ -299,6 +300,7 @@ class CriticColumn:
     valid_issues: list[Issue]
     invalid_issues: list[Issue]
     verified: list[str]
+    verified_ignored: bool = False  # completeness claims play no part in detection
 
 
 def critic_columns(result: ArbitrationResult) -> list[CriticColumn]:
@@ -314,6 +316,7 @@ def critic_columns(result: ArbitrationResult) -> list[CriticColumn]:
             valid_issues=c.valid_issues,
             invalid_issues=c.invalid_issues,
             verified=[v.quote for v in c.verified_claims if v.valid],
+            verified_ignored=c.dimension is Dimension.COMPLETENESS,
         )
         for c in result.critiques
     ]

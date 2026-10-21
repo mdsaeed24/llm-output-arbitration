@@ -142,7 +142,12 @@ for col, data in zip(st.columns(len(cols)), cols, strict=True):
             st.markdown(f"- `{i.severity.value}` “{i.quote[:90]}” — {i.problem}")
         for i in data.invalid_issues:
             st.markdown(f"- ~~“{i.quote[:90]}”~~ *quote not in text*")
-        if data.verified:
+        if data.verified and data.verified_ignored:
+            st.caption(
+                f"Listed {len(data.verified)} 'verified' span(s), which the system IGNORES: "
+                "completeness is about what is missing, so it can't vouch for written claims."
+            )
+        elif data.verified:
             st.markdown("**Verified correct**")
             for q in data.verified:
                 st.markdown(f"- “{q[:90]}”")
