@@ -40,6 +40,13 @@ How to rule — reason explicitly in "reasoning" BEFORE choosing "decision":
   anchor near the gap). If no question was provided, judge against the task the output
   evidently addresses.
 
+Also DISMISS a group, and say why, when it is:
+- a DUPLICATE: it restates a problem another group already covers — typically a completeness
+  complaint that is really the same wrong fact or flawed conclusion as a factual/logic group.
+  Dismiss it only if that other group is confirmed, and name that group in "reasoning".
+- a completeness NITPICK: it asks for content the question did not request, and its absence
+  does not make the answer wrong, unsafe or misleading.
+
 Disagreement types you will see:
 - uncorroborated: only one critic raised it. This is normal — critics cover different
   dimensions — and is neither a reason to confirm nor to dismiss. Verify it yourself.

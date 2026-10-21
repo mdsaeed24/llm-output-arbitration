@@ -68,9 +68,10 @@ async def _main(args: argparse.Namespace) -> int:
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(render(results), encoding="utf-8")
+    out.write_text(render(results, note=args.note), encoding="utf-8")
     write_metrics_json(results, run_dir / "metrics.json")
-    write_metrics_json(results, out.with_name("eval_metrics.json"))
+    # eval_report.md → eval_metrics.json; eval_report_v2.md → eval_metrics_v2.json
+    write_metrics_json(results, out.with_name(out.stem.replace("report", "metrics") + ".json"))
 
     s, b = results.scores["system"], results.scores["baseline"]
     print(
@@ -94,6 +95,9 @@ def main() -> None:
     group.add_argument("--resume", help="Run dir of an interrupted run to continue.")
     group.add_argument("--from-run", help="Run dir to re-score without new system calls.")
     parser.add_argument("--out", default="reports/eval_report.md")
+    parser.add_argument(
+        "--note", help="Paragraph shown under the report title (e.g. what changed)."
+    )
     parser.add_argument("-v", "--verbose", action="store_true", help="Show retry warnings.")
     args = parser.parse_args()
     logging.basicConfig(level=logging.WARNING if args.verbose else logging.ERROR)

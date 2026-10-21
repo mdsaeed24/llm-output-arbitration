@@ -84,8 +84,12 @@ sub-questions, requested items, and constraints such as "compare", "give an exam
 answers what was actually asked rather than a nearby, easier question.
 
 Flag: parts of the question that are skipped or only gestured at, requested items that are
-missing, ignored constraints, answers that technically respond but miss the point, and caveats
-a competent answer could not leave out.
+missing, ignored constraints, and answers that technically respond but miss the point.
+
+Scope discipline: judge only against what the question actually asks. Do not flag background,
+trade-offs, nuance or extra detail the question did not request — "could say more" is not an
+omission. The only exception is a caveat whose absence would make the answer unsafe or
+misleading (for example a medical warning).
 
 An omission has no text of its own, so for "quote" use the sentence of the output closest to
 where the missing part should have been addressed (or the sentence that answers a different
@@ -104,6 +108,10 @@ Not your job: the factual correctness of individual claims, or whether every par
 question is answered.""",
     Dimension.COMPLETENESS: """\
 Leave "verified_claims" empty: completeness is about what is absent, not about spans.
+
+Do not report errors in what IS written — wrong facts, wrong numbers, contradictions or flawed
+reasoning — even when you could phrase them as "the answer fails to give the correct X". Other
+reviewers handle those; reporting them here only creates duplicates.
 
 Not your job: factual accuracy or logical validity.""",
 }

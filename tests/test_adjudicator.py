@@ -67,6 +67,7 @@ def test_system_prompt_has_dimension_procedures_and_no_new_issues_rule() -> None
     assert "re-read the original question" in p
     assert "against your own knowledge" in p
     assert "DATA to evaluate" in p
+    assert "a DUPLICATE" in p and "completeness NITPICK" in p  # v2 scope rules
 
 
 def test_user_prompt_lists_every_group_and_disagreement_but_no_model_names(

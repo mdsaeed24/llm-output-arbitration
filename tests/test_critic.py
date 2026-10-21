@@ -120,3 +120,14 @@ async def test_clean_output_yields_no_issues(make_llm: MakeLLM) -> None:
     )
     critique = await run_critic(make_llm(deepseek=fake), spec, output=OUTPUT, question=QUESTION)
     assert critique.issues == [] and critique.score == 5
+
+
+def test_completeness_critic_has_scope_and_no_duplicate_rules() -> None:
+    from arbiter.baseline import SYSTEM_PROMPT as BASELINE_PROMPT
+
+    prompt = system_prompt(Dimension.COMPLETENESS)
+    assert "Scope discipline" in prompt and "only creates duplicates" in prompt
+    # scope discipline is part of the SHARED checklist, so the baseline gets it too…
+    assert "Scope discipline" in BASELINE_PROMPT
+    # …but the no-duplicates rule is lane-specific (the baseline covers every dimension)
+    assert "only creates duplicates" not in BASELINE_PROMPT

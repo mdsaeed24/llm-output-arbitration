@@ -6,8 +6,10 @@ the baseline — so the report can't quietly spin a result.
 
 from __future__ import annotations
 
+import subprocess
 from datetime import UTC, datetime
 
+from arbiter.config import Dimension
 from arbiter.evaluation.findings import BASELINE, SYSTEM, UNION, critic_variant
 from arbiter.evaluation.metrics import PLANTED_TYPES, PairedComparison, ScoredCase, wilson
 from arbiter.evaluation.runner import EvalResults
@@ -388,7 +390,24 @@ def _health(results: EvalResults) -> list[str]:
     ]
 
 
-def render(results: EvalResults) -> str:
+def _code_version() -> str:
+    """Short git commit of the code that produced the report (+ "-dirty" if uncommitted)."""
+    try:
+        rev = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, check=True
+        ).stdout.strip()
+        dirty = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+    return f"{rev}-dirty" if dirty else rev
+
+
+def render(results: EvalResults, *, note: str | None = None) -> str:
     """The full markdown report."""
     labels = _labels(results)
     s = results.scores[SYSTEM]
@@ -404,8 +423,11 @@ def render(results: EvalResults) -> str:
         f"> Generated {datetime.now(UTC):%Y-%m-%d %H:%M} UTC"
         + (f" from run `{results.run_dir}`" if results.run_dir else "")
         + f" · {len(results.runs)} cases ({clean} clean, {len(results.runs) - clean} with "
-        f"{s.planted_total} hand-planted issues) · total spend ${spend:.3f}",
+        f"{s.planted_total} hand-planted issues) · total spend ${spend:.3f} · code "
+        f"`{_code_version()}` · logic critic "
+        f"`{results.config.model(results.config.roles.critics[Dimension.LOGIC]).model_id}`",
         "",
+        *([f"> **Note:** {note}", ""] if note else []),
         "## Headline",
         "",
         *_headline(results),
