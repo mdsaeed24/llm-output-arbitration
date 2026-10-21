@@ -1,0 +1,338 @@
+{
+  "generated_at": "2026-10-21T08:42:38.599108+00:00",
+  "n_cases": 40,
+  "variants": {
+    "system": {
+      "recall": 0.9428571428571428,
+      "precision": 0.9428571428571428,
+      "accuracy": 0.95,
+      "by_type": {
+        "factual": {
+          "caught": 13,
+          "total": 15
+        },
+        "logic": {
+          "caught": 10,
+          "total": 10
+        },
+        "completeness": {
+          "caught": 10,
+          "total": 10
+        }
+      },
+      "caught": 33,
+      "planted_total": 35,
+      "caught_span": 23,
+      "caught_judge": 10,
+      "findings_total": 35,
+      "false_flags": 2,
+      "false_flags_ge_medium": 1,
+      "restatements": 0,
+      "false_flags_excl_restatements": 2,
+      "precision_excl_restatements": 0.9428571428571428,
+      "false_flags_per_case": 0.05,
+      "clean_cases": 10,
+      "clean_flagged": 0,
+      "clean_flagged_ge_medium": 0,
+      "clean_passed": 10,
+      "flawed_failed": 28,
+      "flawed_cases": 30,
+      "no_verdict": 0,
+      "invalid_quotes": 0,
+      "mean_cost_usd": 0.0057318619,
+      "mean_latency_s": 11.351121592664276,
+      "median_latency_s": 11.591579145519063
+    },
+    "baseline": {
+      "recall": 0.9714285714285714,
+      "precision": 0.875,
+      "accuracy": 0.975,
+      "by_type": {
+        "factual": {
+          "caught": 14,
+          "total": 15
+        },
+        "logic": {
+          "caught": 10,
+          "total": 10
+        },
+        "completeness": {
+          "caught": 10,
+          "total": 10
+        }
+      },
+      "caught": 34,
+      "planted_total": 35,
+      "caught_span": 24,
+      "caught_judge": 10,
+      "findings_total": 40,
+      "false_flags": 5,
+      "false_flags_ge_medium": 2,
+      "restatements": 1,
+      "false_flags_excl_restatements": 4,
+      "precision_excl_restatements": 0.8974358974358975,
+      "false_flags_per_case": 0.125,
+      "clean_cases": 10,
+      "clean_flagged": 0,
+      "clean_flagged_ge_medium": 0,
+      "clean_passed": 10,
+      "flawed_failed": 29,
+      "flawed_cases": 30,
+      "no_verdict": 0,
+      "invalid_quotes": 0,
+      "mean_cost_usd": 0.0017363632,
+      "mean_latency_s": 5.031443047954236,
+      "median_latency_s": 4.729142646014225
+    },
+    "union": {
+      "recall": 0.9428571428571428,
+      "precision": 0.6875,
+      "accuracy": 0.95,
+      "by_type": {
+        "factual": {
+          "caught": 13,
+          "total": 15
+        },
+        "logic": {
+          "caught": 10,
+          "total": 10
+        },
+        "completeness": {
+          "caught": 10,
+          "total": 10
+        }
+      },
+      "caught": 33,
+      "planted_total": 35,
+      "caught_span": 23,
+      "caught_judge": 10,
+      "findings_total": 48,
+      "false_flags": 15,
+      "false_flags_ge_medium": 8,
+      "restatements": 6,
+      "false_flags_excl_restatements": 9,
+      "precision_excl_restatements": 0.7857142857142857,
+      "false_flags_per_case": 0.375,
+      "clean_cases": 10,
+      "clean_flagged": 0,
+      "clean_flagged_ge_medium": 0,
+      "clean_passed": 10,
+      "flawed_failed": 28,
+      "flawed_cases": 30,
+      "no_verdict": 0,
+      "invalid_quotes": 0,
+      "mean_cost_usd": 0.0032456462999999997,
+      "mean_latency_s": 5.850432965540676,
+      "median_latency_s": 5.699593207973521
+    },
+    "critic:factual": {
+      "recall": 0.6285714285714286,
+      "precision": 0.8461538461538461,
+      "accuracy": 0.725,
+      "by_type": {
+        "factual": {
+          "caught": 13,
+          "total": 15
+        },
+        "logic": {
+          "caught": 9,
+          "total": 10
+        },
+        "completeness": {
+          "caught": 0,
+          "total": 10
+        }
+      },
+      "caught": 22,
+      "planted_total": 35,
+      "caught_span": 22,
+      "caught_judge": 0,
+      "findings_total": 26,
+      "false_flags": 4,
+      "false_flags_ge_medium": 1,
+      "restatements": 0,
+      "false_flags_excl_restatements": 4,
+      "precision_excl_restatements": 0.8461538461538461,
+      "false_flags_per_case": 0.1,
+      "clean_cases": 10,
+      "clean_flagged": 0,
+      "clean_flagged_ge_medium": 0,
+      "clean_passed": 10,
+      "flawed_failed": 19,
+      "flawed_cases": 30,
+      "no_verdict": 0,
+      "invalid_quotes": 0,
+      "mean_cost_usd": 0.0016782282,
+      "mean_latency_s": 5.850432965540676,
+      "median_latency_s": 5.699593207973521
+    },
+    "critic:logic": {
+      "recall": 0.5428571428571428,
+      "precision": 0.95,
+      "accuracy": 0.725,
+      "by_type": {
+        "factual": {
+          "caught": 9,
+          "total": 15
+        },
+        "logic": {
+          "caught": 10,
+          "total": 10
+        },
+        "completeness": {
+          "caught": 0,
+          "total": 10
+        }
+      },
+      "caught": 19,
+      "planted_total": 35,
+      "caught_span": 19,
+      "caught_judge": 0,
+      "findings_total": 20,
+      "false_flags": 1,
+      "false_flags_ge_medium": 1,
+      "restatements": 0,
+      "false_flags_excl_restatements": 1,
+      "precision_excl_restatements": 0.95,
+      "false_flags_per_case": 0.025,
+      "clean_cases": 10,
+      "clean_flagged": 0,
+      "clean_flagged_ge_medium": 0,
+      "clean_passed": 10,
+      "flawed_failed": 19,
+      "flawed_cases": 30,
+      "no_verdict": 0,
+      "invalid_quotes": 0,
+      "mean_cost_usd": 0.0010174725000000001,
+      "mean_latency_s": 2.1671305989817484,
+      "median_latency_s": 2.1021148955333047
+    },
+    "critic:completeness": {
+      "recall": 0.2857142857142857,
+      "precision": 0.47619047619047616,
+      "accuracy": 0.6,
+      "by_type": {
+        "factual": {
+          "caught": 0,
+          "total": 15
+        },
+        "logic": {
+          "caught": 0,
+          "total": 10
+        },
+        "completeness": {
+          "caught": 10,
+          "total": 10
+        }
+      },
+      "caught": 10,
+      "planted_total": 35,
+      "caught_span": 0,
+      "caught_judge": 10,
+      "findings_total": 21,
+      "false_flags": 11,
+      "false_flags_ge_medium": 7,
+      "restatements": 6,
+      "false_flags_excl_restatements": 5,
+      "precision_excl_restatements": 0.6666666666666666,
+      "false_flags_per_case": 0.275,
+      "clean_cases": 10,
+      "clean_flagged": 0,
+      "clean_flagged_ge_medium": 0,
+      "clean_passed": 10,
+      "flawed_failed": 14,
+      "flawed_cases": 30,
+      "no_verdict": 0,
+      "invalid_quotes": 0,
+      "mean_cost_usd": 0.0005499456,
+      "mean_latency_s": 2.3269891593954526,
+      "median_latency_s": 2.274775791040156
+    }
+  },
+  "comparisons": [
+    {
+      "a": "system",
+      "b": "baseline",
+      "recall_a_only": 0,
+      "recall_b_only": 1,
+      "recall_p": 1.0,
+      "verdict_a_only": 0,
+      "verdict_b_only": 1,
+      "verdict_p": 1.0
+    },
+    {
+      "a": "system",
+      "b": "union",
+      "recall_a_only": 0,
+      "recall_b_only": 0,
+      "recall_p": 1.0,
+      "verdict_a_only": 0,
+      "verdict_b_only": 0,
+      "verdict_p": 1.0
+    }
+  ],
+  "critics": [
+    {
+      "critic": "factual",
+      "model_id": "deepseek-v4-pro",
+      "valid_issues": 26,
+      "true_positives": 22,
+      "precision": 0.8461538461538461,
+      "planted_caught": 22,
+      "unique_catches": 4,
+      "hallucination_rate": 0.0,
+      "adjudicated": 26,
+      "overruled": 2,
+      "overrule_rate": 0.07692307692307693,
+      "overruled_false_flags": 2,
+      "cases_failed": 0
+    },
+    {
+      "critic": "logic",
+      "model_id": "gemini-3.5-flash-lite",
+      "valid_issues": 20,
+      "true_positives": 19,
+      "precision": 0.95,
+      "planted_caught": 19,
+      "unique_catches": 1,
+      "hallucination_rate": 0.0,
+      "adjudicated": 20,
+      "overruled": 1,
+      "overrule_rate": 0.05,
+      "overruled_false_flags": 1,
+      "cases_failed": 0
+    },
+    {
+      "critic": "completeness",
+      "model_id": "deepseek-flash",
+      "valid_issues": 21,
+      "true_positives": 10,
+      "precision": 0.47619047619047616,
+      "planted_caught": 10,
+      "unique_catches": 10,
+      "hallucination_rate": 0.0,
+      "adjudicated": 21,
+      "overruled": 10,
+      "overrule_rate": 0.47619047619047616,
+      "overruled_false_flags": 10,
+      "cases_failed": 0
+    }
+  ],
+  "adjudicator": {
+    "cases_adjudicated": 29,
+    "cases_short_circuited": 11,
+    "short_circuit_correct": 10,
+    "cases_fallback": 0,
+    "groups_confirmed": 35,
+    "groups_dismissed": 13,
+    "dismissed_false_flags": 13,
+    "dismissed_true_catches": 0,
+    "verdicts_fixed": 0,
+    "verdicts_broken": 0
+  },
+  "judge": {
+    "matches": 20,
+    "rejections": 12,
+    "cost_usd": 0.002329632
+  }
+}
