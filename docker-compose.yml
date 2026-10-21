@@ -1,0 +1,56 @@
+# docker compose up --build
+#   API  → http://localhost:${API_PORT:-8000}/docs
+#   UI   → http://localhost:${UI_PORT:-8501}
+# Both services share one SQLite file on the `arbiter-data` volume. The API is the only writer
+# (it also seeds the demo arbitrations on first start); the UI reads the file directly and sends
+# new arbitrations through the API.
+
+services:
+  api:
+    build: .
+    image: llm-output-arbitration:latest
+    env_file:
+      - path: .env          # DEEPSEEK_API_KEY, GEMINI_API_KEY (see .env.example)
+        required: false     # the demo data and UI work without keys
+    environment:
+      ARBITER_DB_PATH: /data/arbiter.db
+    volumes:
+      - arbiter-data:/data
+    ports:
+      - "${API_PORT:-8000}:8000"
+    command: >
+      sh -c "python scripts/seed_demo.py --if-empty &&
+             uvicorn arbiter.api.main:app --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
+
+  ui:
+    image: llm-output-arbitration:latest
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      ARBITER_DB_PATH: /data/arbiter.db
+      ARBITER_API_URL: http://api:8000
+    volumes:
+      - arbiter-data:/data
+    ports:
+      - "${UI_PORT:-8501}:8501"
+    command: >
+      streamlit run src/arbiter/ui/app.py
+      --server.address 0.0.0.0 --server.port 8501
+      --server.headless true --browser.gatherUsageStats false
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+volumes:
+  arbiter-data:

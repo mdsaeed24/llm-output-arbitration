@@ -30,8 +30,8 @@ llm-0utput-arbitration/
 ├── config.yaml              # providers, models, role assignment, limits (all swappable)
 ├── .env.example             # DEEPSEEK_API_KEY, GEMINI_API_KEY
 ├── pyproject.toml           # deps + ruff/mypy/pytest config
-├── requirements.lock        # exact versions (used by Docker)
-├── Dockerfile, docker-compose.yml          (Phase 7)
+├── requirements.lock        # runtime pins = tested versions (Docker); requirements-dev.lock
+├── Dockerfile, docker-compose.yml          (Phase 7 ✅)
 ├── data/testset.yaml        # YOUR hand-written cases + answer keys   (Phase 4: format + 3 examples ✅)
 ├── reports/eval_report.md   # generated (+ eval_metrics.json)          (Phase 5 ✅)
 ├── docs/PLAN.md
@@ -40,7 +40,7 @@ llm-0utput-arbitration/
 │   ├── evaluate.py          # system vs baseline vs ablations; --resume/--from-run (Phase 5 ✅)
 │   ├── run_critics.py       # debug: critics only, no graph             (Phase 1 ✅)
 │   ├── arbitrate.py         # live end-to-end run / --mermaid           (Phase 2 ✅)
-│   └── seed_demo.py         # demo arbitrations for the UI             (Phase 7)
+│   └── seed_demo.py         # replay recorded demo arbitrations         (Phase 7 ✅)
 ├── src/arbiter/
 │   ├── config.py            # typed config loader                       (Phase 0 ✅)
 │   ├── llm/                 # one OpenAI-SDK client for all providers   (Phase 1)
