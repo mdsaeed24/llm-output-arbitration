@@ -72,8 +72,11 @@ class Providers:
         self,
         replies: dict[Dimension, dict[str, Any] | Exception],
         delay: float = 0.0,
+        adjudicator: dict[str, Any] | Exception | None = None,
     ) -> None:
         self.replies = replies
+        self.adjudicator = adjudicator
+        self.adjudicator_requests: list[dict[str, Any]] = []
         self.delay = delay
         self.in_flight = self.peak = 0
         self.fakes = {
@@ -86,7 +89,13 @@ class Providers:
         self.peak = max(self.peak, self.in_flight)
         try:
             await asyncio.sleep(self.delay)
-            reply = self.replies[_dimension_of(request)]
+            if "You are the ADJUDICATOR" in request["messages"][0]["content"]:
+                self.adjudicator_requests.append(request)
+                reply = self.adjudicator
+                if reply is None:
+                    raise AssertionError("unexpected adjudicator call")
+            else:
+                reply = self.replies[_dimension_of(request)]
             if isinstance(reply, Exception):
                 raise reply
             return make_completion(reply)

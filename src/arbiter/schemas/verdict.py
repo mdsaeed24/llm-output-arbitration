@@ -26,6 +26,9 @@ class ConfirmedIssue(BaseModel):
     span_end: int | None = None
     evidence: str
     confidence: float = Field(ge=0, le=1, description="Confidence this issue is real.")
+    disagreement_ids: list[str] = Field(
+        default_factory=list, description="Disagreements the adjudicator resolved here."
+    )
 
 
 class DismissedFlag(BaseModel):
@@ -38,6 +41,7 @@ class DismissedFlag(BaseModel):
     span_end: int | None = None
     rule: Literal["invalid_quote", "adjudicator"]
     reason: str
+    disagreement_ids: list[str] = Field(default_factory=list)
 
 
 class Adjudication(BaseModel):
@@ -50,13 +54,16 @@ class Adjudication(BaseModel):
     dismissed: list[DismissedFlag] = Field(default_factory=list)
     summary: str
     calls: list[CallRecord] = Field(default_factory=list)
+    fallback_reason: str | None = Field(
+        None, description="Set when the LLM adjudicator failed and the union rule was used."
+    )
 
 
 class Verdict(BaseModel):
     """The single, confidence-scored outcome of an arbitration."""
 
     status: Literal["ok", "degraded", "failed"] = Field(
-        description="degraded = at least one critic failed; failed = no critic succeeded."
+        description="degraded = a critic or the adjudicator failed; failed = no critic succeeded."
     )
     passed: bool | None
     overall_score: int | None = Field(None, ge=1, le=10)

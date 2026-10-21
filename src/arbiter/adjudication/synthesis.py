@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from arbiter.config import AppConfig, Dimension
 from arbiter.schemas.critique import CriticFailure, Critique, Severity
 from arbiter.schemas.disagreement import DisagreementReport
-from arbiter.schemas.verdict import Adjudication, DismissedFlag, Verdict
+from arbiter.schemas.verdict import Adjudication, ConfirmedIssue, DismissedFlag, Verdict
 
 
 def _invalid_quote_dismissals(critiques: Sequence[Critique]) -> list[DismissedFlag]:
@@ -23,6 +23,12 @@ def _invalid_quote_dismissals(critiques: Sequence[Critique]) -> list[DismissedFl
         for c in critiques
         for i in c.invalid_issues
     ]
+
+
+def is_pass(confirmed: Sequence[ConfirmedIssue], config: AppConfig) -> bool:
+    """An output passes unless a confirmed issue reaches ``verdict.fail_at_severity``."""
+    fail_rank = Severity(config.verdict.fail_at_severity).rank
+    return not any(ci.severity.rank >= fail_rank for ci in confirmed)
 
 
 def low_confidence_dimensions(critiques: Sequence[Critique], threshold: float) -> list[Dimension]:
@@ -87,10 +93,11 @@ def synthesize_verdict(
             short_circuited=True,
         )
 
-    fail_rank = Severity(config.verdict.fail_at_severity).rank
+    if adjudication.fallback_reason:
+        status = "degraded"
     return Verdict(
         status=status,
-        passed=not any(ci.severity.rank >= fail_rank for ci in adjudication.confirmed),
+        passed=is_pass(adjudication.confirmed, config),
         overall_score=adjudication.overall_score,
         confidence=adjudication.confidence * coverage,
         confirmed_issues=adjudication.confirmed,

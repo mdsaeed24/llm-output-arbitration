@@ -65,8 +65,9 @@ llm-0utput-arbitration/
 │   │   ├── base.py          #   Adjudicator protocol + deterministic score (Phase 2 ✅)
 │   │   ├── union.py         #   no-LLM union adjudicator = "no adjudicator" ablation (Phase 2 ✅)
 │   │   ├── synthesis.py     #   verdict synthesis (coverage-scaled confidence) (Phase 2 ✅)
-│   │   └── llm.py           #   LLM adjudicator                          (Phase 3)
-│   ├── baseline.py          #   single-reviewer baseline                 (Phase 3)
+│   │   ├── prompts.py       #   adjudicator prompt (blind to model names) (Phase 3 ✅)
+│   │   └── llm.py           #   LLM adjudicator, one ruling per group     (Phase 3 ✅)
+│   ├── baseline.py          #   single-reviewer baseline (same rules)     (Phase 3 ✅)
 │   ├── pipeline.py          #   Arbiter: public entry point               (Phase 2 ✅)
 │   ├── evaluation/          #   span matching, metrics, ablations, report (Phase 5)
 │   ├── storage/db.py        #   SQLite audit trail                       (Phase 6)
@@ -113,6 +114,15 @@ llm-0utput-arbitration/
   are computed from the full run's stored critiques — zero extra API cost, and identical inputs
   across variants.
 - **Disagreement detection is deterministic Python**, not an LLM: cheap, testable, explainable.
+- **The adjudicator rules, it never adds.** It must confirm or dismiss every issue group (a
+  Pydantic validator rejects missing/unknown/duplicate group ids, which triggers a re-ask) and
+  cannot report new issues. It runs on the same model as the baseline, so if it could add
+  findings the system would just be "baseline + extras" and the comparison would be rigged.
+- **Adjudicator failure degrades, not crashes:** union of critic issues at half confidence,
+  verdict status `degraded`, reason recorded.
+- **Baseline fairness:** same model as the adjudicator, same quote rules, severity definitions
+  and per-dimension checklists (shared prompt blocks), same quote validation and pass/fail
+  threshold, typed issues so the Phase 5 matching rules apply identically.
 - **Two matching rules in evaluation (decided 2026-10-20).** The answer key has two shapes
   (`data/testset.yaml`, validated by `schemas/testcase.py`):
   - *factual / logic* planted issues have an exact `span`; a found **factual/logic** issue

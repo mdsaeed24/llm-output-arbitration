@@ -16,6 +16,7 @@ from langgraph.types import Send
 
 from arbiter.adjudication.base import AdjudicationInput, Adjudicator
 from arbiter.adjudication.synthesis import synthesize_verdict
+from arbiter.adjudication.union import UnionAdjudicator
 from arbiter.config import AppConfig, Dimension
 from arbiter.critics.critic import CriticSpec, run_critic
 from arbiter.graph.disagreement import detect_disagreements
@@ -100,15 +101,30 @@ class ArbitrationNodes:
         return {"report": report}
 
     async def adjudicate(self, state: ArbitrationState) -> dict[str, Any]:
-        """Resolve disagreements (Phase 2: union rule; Phase 3: LLM adjudicator)."""
-        adjudication = await self.adjudicator.adjudicate(
-            AdjudicationInput(
-                question=state.get("question"),
-                output=state["output"],
-                critiques=state.get("critiques", []),
-                report=state["report"],
-            )
+        """Resolve disagreements. If the LLM adjudicator fails, fall back to the union rule
+        (every valid critic issue confirmed) at half confidence, and say so in the verdict."""
+        inp = AdjudicationInput(
+            question=state.get("question"),
+            output=state["output"],
+            critiques=state.get("critiques", []),
+            report=state["report"],
         )
+        try:
+            adjudication = await self.adjudicator.adjudicate(inp)
+        except LLMError as exc:
+            logger.warning("adjudicator failed, using union fallback: %s", exc)
+            union = await UnionAdjudicator().adjudicate(inp)
+            reason = f"{type(exc).__name__}: {exc}"
+            adjudication = union.model_copy(
+                update={
+                    "adjudicator": "union-fallback",
+                    "confidence": union.confidence * 0.5,
+                    "summary": f"The adjudicator failed ({reason}); every valid critic issue "
+                    f"was confirmed without review. {union.summary}",
+                    "calls": exc.calls,
+                    "fallback_reason": reason,
+                }
+            )
         return {"adjudication": adjudication}
 
     async def synthesize_verdict(self, state: ArbitrationState) -> dict[str, Any]:

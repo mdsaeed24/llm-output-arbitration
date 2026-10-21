@@ -13,7 +13,7 @@ from typing import Any
 from langgraph.graph.state import CompiledStateGraph
 
 from arbiter.adjudication.base import Adjudicator
-from arbiter.adjudication.union import UnionAdjudicator
+from arbiter.adjudication.llm import LLMAdjudicator
 from arbiter.config import AppConfig
 from arbiter.critics.critic import CriticSpec, critic_specs
 from arbiter.graph.build import build_graph
@@ -39,7 +39,7 @@ class Arbiter:
         self.nodes = ArbitrationNodes(
             config,
             self.llm,
-            adjudicator or UnionAdjudicator(),
+            adjudicator or LLMAdjudicator(self.llm),
             specs if specs is not None else critic_specs(config),
         )
         self.graph: CompiledStateGraph[Any] = build_graph(self.nodes)

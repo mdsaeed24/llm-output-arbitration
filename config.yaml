@@ -77,6 +77,7 @@ roles:
 limits:
   max_concurrency: 4          # max in-flight LLM calls across the whole process
   max_output_tokens: 2048     # hard cap per call
+  adjudicator_max_output_tokens: 4096   # it reasons through every issue group
   max_retries: 4              # transient errors / 429s, with exponential backoff
   backoff_initial_s: 2.0
   backoff_max_s: 60.0

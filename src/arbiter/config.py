@@ -96,6 +96,7 @@ class LimitsConfig(_Strict):
 
     max_concurrency: int = Field(default=4, ge=1, le=64)
     max_output_tokens: int = Field(default=2048, ge=64)
+    adjudicator_max_output_tokens: int = Field(default=4096, ge=64)
     max_retries: int = Field(default=4, ge=0, le=10)
     backoff_initial_s: float = Field(default=2.0, gt=0)
     backoff_max_s: float = Field(default=60.0, gt=0)
